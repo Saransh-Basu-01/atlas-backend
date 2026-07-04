@@ -29,3 +29,55 @@ This repository documents the process of designing and building a modern backend
 - Monitoring
 - Workflow
 - AI Inference
+
+
+project-atlas/
+
+│
+├── docs/
+│   ├── architecture/
+│   ├── diagrams/
+│   ├── system-design-notes/
+│   ├── decisions/              # ADRs (Architecture Decision Records)
+│   └── learning-notes/
+│
+├── services/
+│   ├── auth-service/
+│   ├── notification-service/
+│   ├── file-service/
+│   ├── video-service/
+│   ├── api-gateway/
+│   ├── chat-service/
+│   ├── search-service/
+│   ├── payment-service/
+│   ├── analytics-service/
+│   ├── recommendation-service/
+│   ├── scheduler-service/
+│   ├── image-cdn-service/
+│   ├── monitoring-service/
+│   ├── workflow-service/
+│   └── ai-inference-service/
+│
+├── shared/
+│   ├── config/
+│   ├── database/
+│   ├── auth/
+│   ├── logging/
+│   ├── middleware/
+│   ├── events/
+│   ├── utils/
+│   └── common_models/
+│
+├── infrastructure/
+│   ├── docker/
+│   ├── nginx/
+│   ├── redis/
+│   ├── rabbitmq/
+│   ├── postgres/
+│   ├── prometheus/
+│   ├── grafana/
+│   └── scripts/
+│
+├── docker-compose.yml
+├── README.md
+└── roadmap.md
