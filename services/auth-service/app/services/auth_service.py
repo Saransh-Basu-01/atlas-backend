@@ -1,56 +1,49 @@
-from typing import Optional
-from passlib.context import CryptContext
-
+from sqlalchemy.exc import IntegrityError
 from app.models.models import User
 from app.repositories.user_repository import UserRepository
-
-
+from app.schemas.schemas import UserCreate,UserResponse
+from app.security.password import hash_password
+from sqlalchemy.ext.asyncio import AsyncSession
 class UserAlreadyExistsError(Exception):
     pass
 
-
-class UserNotFoundError(Exception):
-    pass
-
-
-class UserService:
+class AuthService:
     """Business layer: rules + validations + transformations."""
 
-    def __init__(self, user_repo: UserRepository):
+    def __init__(self, user_repo: UserRepository,session:AsyncSession):
         self.user_repo = user_repo
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        self.session=session
 
-    async def create_user(self, name: str, email: str, password: str) -> User:
-        # 1) Business rule: duplicate email not allowed
-        existing = await self.user_repo.find_by_email(email)
-        if existing:
+    async def register(self, data: UserCreate) -> UserResponse:
+        # 1) Check username exists
+        username = data.username.strip()
+        email = data.email.lower().strip()
+        existing_username = await self.user_repo.find_by_username(username)
+        if existing_username:
+            raise UserAlreadyExistsError("Username already registered")
+
+        # 2) Check email exists
+        existing_email = await self.user_repo.find_by_email(email)
+        if existing_email:
             raise UserAlreadyExistsError("Email already registered")
 
-        # 2) Business rule: hash password before storing
-        hashed_password = self.pwd_context.hash(password)
+        # 3) Hash password
+        password_hash = hash_password(data.password)
 
-        # 3) Business rule: default active user (example)
-        return await self.user_repo.create(
-            name=name.strip(),
-            email=email.lower().strip(),
-            hashed_password=hashed_password,
-            is_active=True,
+        # 4) Repository.create(user) -> commit + refresh inside repository
+        user = User(
+            username=username,
+            email=email,
+            password_hash=password_hash,
         )
 
-    async def get_user_profile(self, user_id: int) -> User:
-        user = await self.user_repo.find_by_id(user_id)
-        if not user:
-            raise UserNotFoundError("User not found")
-        return user
+        await self.user_repo.create(user)
 
-    async def change_password(self, user_id: int, new_password: str) -> None:
-        user = await self.user_repo.find_by_id(user_id)
-        if not user:
-            raise UserNotFoundError("User not found")
+        try:
+            await self.session.commit()
+            await self.session.refresh(user)
+        except IntegrityError:
+            await self.session.rollback()
+            raise UserAlreadyExistsError("Username or email already exists")
 
-        # Example password rule
-        if len(new_password) < 8:
-            raise ValueError("Password must be at least 8 characters long")
-
-        hashed_password = self.pwd_context.hash(new_password)
-        await self.user_repo.update_password(user_id=user_id, hashed_password=hashed_password)
+        return UserResponse.model_validate(user)
