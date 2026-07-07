@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.db.session import test_db_connection
 from app.api.health import router as health_router
+from app.api.v1 import api_v1_router
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -28,3 +30,4 @@ def root():
     }
 
 app.include_router(health_router)
+app.include_router(api_v1_router, prefix="/api")
