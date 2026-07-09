@@ -16,6 +16,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "passlib>=1.7.4",
     "jose>=1.0.0",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]

@@ -5,6 +5,9 @@ from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService,UserAlreadyExistsError,InvalidCredentialsError
 from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenPayload,TokenResponse
+from app.dependencies.auth import get_current_user
+from app.models.models import User
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,14 +46,23 @@ async def register_user(
     status_code=status.HTTP_200_OK,
 )
 async def login_user(
-    payload: UserLogin,
+    # payload: UserLogin,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     service: AuthService = Depends(get_user_service),
 ):
     try:
-        token = await service.login(payload)
-        return token
+        # token = await service.login(payload) 
+        # return token
+        payload = UserLogin(email=form_data.username, password=form_data.password)
+        return await service.login(payload)
     except InvalidCredentialsError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
         )
+    
+@router.get("/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
+async def read_me(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user
