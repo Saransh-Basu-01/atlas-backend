@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
-from app.services.auth_service import AuthService,UserAlreadyExistsError
-from app.schemas.schemas import UserCreate, UserResponse
+from app.services.auth_service import AuthService,UserAlreadyExistsError,InvalidCredentialsError
+from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenPayload,TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -34,4 +34,23 @@ async def register_user(
         raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
         detail=str(e),
+        )
+    
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def login_user(
+    payload: UserLogin,
+    service: AuthService = Depends(get_user_service),
+):
+    try:
+        token = await service.login(payload)
+        return token
+    except InvalidCredentialsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
         )
