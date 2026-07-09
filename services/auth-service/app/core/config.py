@@ -17,7 +17,3 @@ class Settings(BaseSettings):
     reset_token_expire_min: int = 60
 
 settings = Settings()
-
-import os
-print("Current working directory:", os.getcwd())
-settings=Settings()
