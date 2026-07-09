@@ -1,12 +1,15 @@
 from sqlalchemy.exc import IntegrityError
 from app.models.models import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.schemas import UserCreate,UserResponse
+from app.schemas.schemas import UserCreate,UserResponse,UserLogin,TokenPayload,TokenResponse
 from app.security.password import hash_password
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.security.password import verify_password
+from app.security.jwt import create_access_token
 class UserAlreadyExistsError(Exception):
     pass
-
+class InvalidCredentialsError(Exception):
+    pass
 class AuthService:
     """Business layer: rules + validations + transformations."""
 
@@ -47,3 +50,17 @@ class AuthService:
             raise UserAlreadyExistsError("Username or email already exists")
 
         return UserResponse.model_validate(user)
+
+
+    async def login(self,data:UserLogin)->TokenResponse:
+        email = data.email.lower().strip()
+        password=data.password
+        user = await self.user_repo.find_by_email(email)
+        if not user:
+            raise InvalidCredentialsError("invalid credentials")
+        is_valid=verify_password(password,user.password_hash)
+        if not is_valid:
+            raise InvalidCredentialsError("invalid credentials")
+        access_token = create_access_token(data={"sub": str(user.id)})
+        return TokenResponse(access_token=access_token)
+        
