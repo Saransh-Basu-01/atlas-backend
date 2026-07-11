@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from sqlalchemy import String, func, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy.orm import relationship
 from app.db.base import Base
-
 
 class User(Base):
     __tablename__ = "users"
@@ -31,3 +30,5 @@ class User(Base):
         onupdate=func.now(),
         nullable=False,
     )
+   
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
