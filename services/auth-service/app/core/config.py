@@ -15,5 +15,6 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     reset_token_expire_min: int = 60
+    REFRESH_TOKEN_EXPIRE_DAYS=30
 
 settings = Settings()
