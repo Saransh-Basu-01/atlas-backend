@@ -30,3 +30,6 @@ class TokenResponse(BaseModel):
 class TokenPayload(BaseModel):
     sub: str
     exp: int
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str

@@ -84,7 +84,7 @@ class AuthService:
         expires_at=refresh_expires_at,
         )
 
-        self.refresh_token_repo.create(refresh_token_obj)
+        await self.refresh_token_repo.create(refresh_token_obj)
         await self.session.commit()
 
         return TokenResponse(
@@ -92,4 +92,60 @@ class AuthService:
         refresh_token=raw_refresh_token,
         )
 
+    async def refresh(
+        self,
+        *,
+        refresh_token: str,
+        ip_address: str | None = None,
+        device_name: str | None = None,
+    ) -> TokenResponse:
+        now = datetime.now(timezone.utc)
+        token_hash = hash_refresh_token(refresh_token)
+
+        # 1) find by hash
+        token_row = await self.refresh_token_repo.get_by_hash(token_hash)
+        if not token_row:
+            raise InvalidCredentialsError("invalid refresh token")
+
+        # 2) revoked?
+        if token_row.revoked_at is not None:
+            raise InvalidCredentialsError("refresh token revoked")
+
+        # 3) expired?
+        if token_row.expires_at <= now:
+            raise InvalidCredentialsError("refresh token expired")
+
+        # 4) user exists?
+        user = await self.user_repo.find_by_id(token_row.user_id)
+        if not user:
+            raise InvalidCredentialsError("invalid refresh token")
+
+        # 5) new access token
+        access_token = create_access_token(data={"sub": str(user.id)})
+
+        # 6) rotate refresh token (recommended)
+        new_raw_refresh = generate_refresh_token()
+        new_hash_refresh = hash_refresh_token(new_raw_refresh)
+        new_expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+        # revoke old token
+        await self.refresh_token_repo.revoke_by_id(token_row.id)
+
+        # create new token row
+        new_row = RefreshToken(
+            user_id=user.id,
+            token_hash=new_hash_refresh,
+            expires_at=new_expires_at,
+            device_name=device_name,
+            ip_address=ip_address,
+        )
+        await self.refresh_token_repo.create(new_row)
+
+        # single commit
+        await self.session.commit()
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=new_raw_refresh,
+        )
         

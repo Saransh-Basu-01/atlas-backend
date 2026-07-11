@@ -46,11 +46,15 @@ class RefreshToken(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        nullable=False,
-    )
+    DateTime(timezone=True),
+    server_default=func.now(),
+    nullable=False,
+)
 
-    revoked_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
+)
 
     device_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
