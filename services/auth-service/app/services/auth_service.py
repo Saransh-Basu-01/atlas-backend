@@ -2,7 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models.models import User
 from app.repositories.user_repository import UserRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
-from app.schemas.schemas import UserCreate,UserResponse,UserLogin,TokenPayload,TokenResponse
+from app.schemas.schemas import UserCreate,UserResponse,UserLogin,TokenPayload,TokenResponse,AuthTokens
 from app.security.password import hash_password
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.security.password import verify_password
@@ -59,7 +59,7 @@ class AuthService:
         return UserResponse.model_validate(user)
 
 
-    async def login(self,data:UserLogin)->TokenResponse:
+    async def login(self,data:UserLogin)->AuthTokens:
         email = data.email.lower().strip()
         password=data.password
         user = await self.user_repo.find_by_email(email)
@@ -87,7 +87,7 @@ class AuthService:
         await self.refresh_token_repo.create(refresh_token_obj)
         await self.session.commit()
 
-        return TokenResponse(
+        return AuthTokens(
         access_token=access_token,
         refresh_token=raw_refresh_token,
         )
@@ -98,7 +98,7 @@ class AuthService:
         refresh_token: str,
         ip_address: str | None = None,
         device_name: str | None = None,
-    ) -> TokenResponse:
+    ) -> AuthTokens:
         now = datetime.now(timezone.utc)
         token_hash = hash_refresh_token(refresh_token)
 
@@ -144,8 +144,24 @@ class AuthService:
         # single commit
         await self.session.commit()
 
-        return TokenResponse(
+        return AuthTokens(
             access_token=access_token,
             refresh_token=new_raw_refresh,
         )
         
+    async def revoke_refresh_token(self, refresh_token: str) -> None:
+        token_hash = hash_refresh_token(refresh_token)
+        token_row = await self.refresh_token_repo.get_by_hash(token_hash)
+        if not token_row:
+            return  # logout should be idempotent
+
+        if token_row.revoked_at is not None:
+            return  # already revoked
+
+        await self.refresh_token_repo.revoke_by_id(token_row.id)
+        await self.session.commit()
+    
+    async def revoke_all_refresh_tokens(self, user_id: int) -> None:
+        deleted_count=await self.refresh_token_repo.delete_all_for_user(user_id)
+        await self.session.commit()
+        return deleted_count

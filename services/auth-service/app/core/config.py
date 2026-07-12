@@ -16,5 +16,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     reset_token_expire_min: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS:int=30
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+    REFRESH_COOKIE_MAX_AGE_SECONDS: int = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
 settings = Settings()

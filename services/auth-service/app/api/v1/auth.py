@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status,Request
+from fastapi import APIRouter, Depends, HTTPException, status,Request,Response,Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService,UserAlreadyExistsError,InvalidCredentialsError
@@ -9,6 +8,8 @@ from app.dependencies.auth import get_current_user
 from app.models.models import User
 from fastapi.security import OAuth2PasswordRequestForm
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.core.config import settings
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
@@ -49,14 +50,27 @@ async def register_user(
 )
 async def login_user(
     # payload: UserLogin,
+    response:Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
-    service: AuthService = Depends(get_user_service),
+    service: AuthService = Depends(get_user_service)
 ):
     try:
         # token = await service.login(payload) 
         # return token
         payload = UserLogin(email=form_data.username, password=form_data.password)
-        return await service.login(payload)
+        tokens = await service.login(payload) 
+        response.set_cookie(
+            key="refresh_token",
+            value=tokens.refresh_token,
+            httponly=True,
+            secure=settings.COOKIE_SECURE,          # set False only in local HTTP dev
+            samesite="lax",
+            max_age=settings.REFRESH_COOKIE_MAX_AGE_SECONDS,
+            path="/",
+        )
+        return TokenResponse(
+            access_token=tokens.access_token
+        )
     except InvalidCredentialsError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -73,22 +87,91 @@ async def read_me(
              response_model=TokenResponse,
              status_code=status.HTTP_200_OK)
 async def refresh_tokens(
-    payload:RefreshTokenRequest,
+    response:Response,
     request:Request,
+    refresh_token: str | None = Cookie(default=None, alias="refresh_token"),
     service:AuthService=Depends(get_user_service)
 )->TokenResponse:
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="missing refresh token",
+        )
     ip_address = request.client.host if request.client else None
     device_name = request.headers.get("user-agent")
     try:
         tokens = await service.refresh(
-            refresh_token=payload.refresh_token,
+            refresh_token=refresh_token,
             ip_address=ip_address,
             device_name=device_name
         )
-        return tokens
+        response.set_cookie(
+            key="refresh_token",
+            value=tokens.refresh_token,
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite=settings.COOKIE_SAMESITE,
+            max_age=settings.REFRESH_COOKIE_MAX_AGE_SECONDS,
+            path="/",
+        )
+        return TokenResponse(
+            access_token=tokens.access_token,
+        )
     except InvalidCredentialsError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
         )
     
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+)
+async def logout_user(
+    response: Response,
+    refresh_token: str | None = Cookie(default=None, alias="refresh_token"),
+    service: AuthService = Depends(get_user_service),
+):
+    # Optional: if token exists, revoke it in DB (recommended)
+    if refresh_token:
+        try:
+            await service.revoke_refresh_token(refresh_token)  # create this method if not present
+        except Exception:
+            pass  # don't fail logout for this
+
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        samesite=settings.COOKIE_SAMESITE,
+        secure=settings.COOKIE_SECURE,
+    )
+    return {"message": "logged out successfully"}
+
+
+@router.post(
+    "/logout-all",
+    status_code=status.HTTP_200_OK,
+)
+async def logout_all_devices(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    service: AuthService = Depends(get_user_service),
+):
+    try:
+        deleted_count = await service.revoke_all_refresh_tokens(current_user.id)
+
+        response.delete_cookie(
+            key="refresh_token",
+            path="/",
+        )
+
+        return {
+            "message": "logged out from all devices",
+            "revoked_tokens": deleted_count,
+        }
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="failed to logout from all devices",
+        )
