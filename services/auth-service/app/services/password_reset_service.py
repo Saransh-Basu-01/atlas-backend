@@ -40,6 +40,7 @@ class PasswordResetService:
         (caller should email it to user).
         For unknown email, returns empty string to avoid user enumeration.
         """
+        email = email.lower().strip()
         user = await self.user_repo.find_by_email(email)
         if not user:
             # Avoid leaking whether email exists

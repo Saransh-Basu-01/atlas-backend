@@ -3,12 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService,UserAlreadyExistsError,InvalidCredentialsError
-from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenPayload,TokenResponse,RefreshTokenRequest
+from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenPayload,TokenResponse,RefreshTokenRequest,ResetPasswordRequest,ResetPasswordResponse,ForgotPasswordRequest,ForgotPasswordResponse
 from app.dependencies.auth import get_current_user
 from app.models.models import User
 from fastapi.security import OAuth2PasswordRequestForm
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.core.config import settings
+from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
+from app.services.email_service import EmailService
+from app.services.password_reset_service import PasswordResetService,InvalidOrExpiredResetTokenError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,6 +25,17 @@ def get_user_service(session: AsyncSession = Depends(get_db)) -> AuthService:
     session=session,
 ) 
 
+def get_password_service(session: AsyncSession = Depends(get_db)) -> PasswordResetService:
+    repo = UserRepository(session)
+    reset_token_repo = PasswordResetTokenRepository(session)
+    return PasswordResetService(
+    user_repo=repo,
+    reset_token_repo=reset_token_repo,
+    session=session,
+) 
+
+def get_email_service() -> EmailService:
+    return EmailService(base_url=settings.APP_BASE_URL)
 
 @router.post(
     "/register",
@@ -175,3 +189,43 @@ async def logout_all_devices(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="failed to logout from all devices",
         )
+    
+@router.post(
+    "/forgot-password",
+    response_model=ForgotPasswordResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    service: PasswordResetService = Depends(get_password_service),
+    email_service: EmailService = Depends(get_email_service),
+):
+    raw_token = await service.forgot_password(payload.email)
+
+    if raw_token:
+        await email_service.send_password_reset_email(payload.email, raw_token)
+
+    return ForgotPasswordResponse(
+        message="If an account with that email exists, a reset link has been sent."
+    )
+
+
+@router.post(
+    "/reset-password",
+    response_model=ResetPasswordResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    service: PasswordResetService = Depends(get_password_service),
+):
+    try:
+        new_password_ = payload.new_password
+        await service.reset_password(payload.token, new_password_)
+    except InvalidOrExpiredResetTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    return ResetPasswordResponse(message="Password has been reset successfully.")
