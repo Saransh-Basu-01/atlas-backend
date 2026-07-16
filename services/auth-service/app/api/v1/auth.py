@@ -222,7 +222,7 @@ def get_user_service(session: AsyncSession = Depends(get_db)) -> AuthService:
 def get_password_service(session: AsyncSession = Depends(get_db)) -> PasswordResetService:
     repo = UserRepository(session)
     reset_token_repo = PasswordResetTokenRepository(session)
-    email_service=EmailService
+    email_service=EmailService()
     return PasswordResetService(
     user_repo=repo,
     reset_token_repo=reset_token_repo,
