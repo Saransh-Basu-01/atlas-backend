@@ -39,7 +39,7 @@ class EmailService:
             """,
         }
 
-        resend.Emails.send(params)
+        await asyncio.to_thread(resend.Emails.send, params)
 
     async def send_password_changed_email(self, email: str) -> None:
         params = {
