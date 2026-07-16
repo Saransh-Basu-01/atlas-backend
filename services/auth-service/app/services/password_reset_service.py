@@ -100,3 +100,4 @@ class PasswordResetService:
         await self.reset_token_repo.mark_used(token_row.id)
 
         await self.session.commit()
+        await self.email_service.send_password_changed_email(user.email)
