@@ -11,7 +11,7 @@ from app.repositories.password_reset_token_repository import PasswordResetTokenR
 from app.repositories.user_repository import UserRepository
 from app.security.reset_token import generate_reset_token, hash_reset_token
 from app.security.password import hash_password
-
+from app.services.email_service import EmailService
 
 class InvalidOrExpiredResetTokenError(Exception):
     pass
@@ -28,13 +28,15 @@ class PasswordResetService:
         self,
         user_repo: UserRepository,
         reset_token_repo: PasswordResetTokenRepository,
+        email_service:EmailService,
         session: AsyncSession,
     ):
         self.user_repo = user_repo
         self.reset_token_repo = reset_token_repo
+        self.email_service=email_service
         self.session = session
 
-    async def forgot_password(self, email: str) -> str:
+    async def forgot_password(self, email: str) -> None:
         """
         Creates a reset token for an existing user and returns RAW token
         (caller should email it to user).
@@ -65,8 +67,11 @@ class PasswordResetService:
 
         await self.reset_token_repo.create(reset_token)
         await self.session.commit()
-
-        return raw_token
+        await self.email_service.send_password_reset_email(
+            user.email,
+            raw_token
+        )
+        return 
 
     async def reset_password(self, raw_token: str, new_password: str) -> None:
         """
