@@ -198,9 +198,10 @@ async def logout_all_devices(
 @router.post("/forgot-password", response_model=ForgotPasswordResponse, status_code=status.HTTP_200_OK)
 async def forgot_password(
     payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     service: PasswordResetService = Depends(get_password_service),
 ):
-    await service.forgot_password(payload.email)
+    await service.forgot_password(payload.email,background_tasks)
     return ForgotPasswordResponse(
         message="If an account with that email exists, a reset link has been sent."
     )
