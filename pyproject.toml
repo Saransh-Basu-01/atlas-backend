@@ -17,6 +17,7 @@ dependencies = [
     "passlib>=1.7.4",
     "jose>=1.0.0",
     "python-multipart>=0.0.32",
+    "resend>=2.33.0",
 ]
 
 [dependency-groups]

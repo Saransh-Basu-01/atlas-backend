@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
     COOKIE_SAMESITE: str = "lax"
     REFRESH_COOKIE_MAX_AGE_SECONDS: int = REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    resend_api_key: str
+    email_from: str
+    frontend_url: str
 
 settings = Settings()
