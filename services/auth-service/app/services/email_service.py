@@ -1,5 +1,5 @@
 import resend
-
+import asyncio
 from app.core.config import settings
 
 
@@ -40,3 +40,18 @@ class EmailService:
         }
 
         resend.Emails.send(params)
+
+    async def send_password_changed_email(self, email: str) -> None:
+        params = {
+            "from": settings.email_from,
+            "to": [email],
+            "subject": "Your password was changed",
+            "html": """
+                <h2>Password Changed</h2>
+                <p>Your account password was changed successfully.</p>
+                <p>If this was not you, please secure your account immediately.</p>
+            """,
+        }
+
+        # keep async endpoint non-blocking while resend call is sync
+        await asyncio.to_thread(resend.Emails.send, params)
