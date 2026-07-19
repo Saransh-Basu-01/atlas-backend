@@ -37,8 +37,8 @@ class PasswordResetService:
         self.email_service=email_service
         self.session = session
 
-    async def forgot_password(self, email: str,
-                              background_tasks:BackgroundTasks) -> None:
+    async def forgot_password(self, email: str
+                              ) ->tuple[str,str]|None:
         """
         Creates a reset token for an existing user and returns RAW token
         (caller should email it to user).
@@ -69,12 +69,7 @@ class PasswordResetService:
 
         await self.reset_token_repo.create(reset_token)
         await self.session.commit()
-        background_tasks.add_task(
-        self.email_service.send_password_reset_email,
-        user.email,
-        raw_token,
-        )
-        return 
+        return user.email,raw_token
 
     async def reset_password(self, raw_token: str, new_password: str) -> None:
         """

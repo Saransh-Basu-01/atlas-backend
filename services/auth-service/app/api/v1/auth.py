@@ -201,7 +201,12 @@ async def forgot_password(
     background_tasks: BackgroundTasks,
     service: PasswordResetService = Depends(get_password_service),
 ):
-    await service.forgot_password(payload.email,background_tasks)
+    result=await service.forgot_password(payload.email)
+    if result:
+        email,raw_token=result
+        background_tasks.add_task(
+            service.email_service.send_password_reset_email,email,raw_token
+        )
     return ForgotPasswordResponse(
         message="If an account with that email exists, a reset link has been sent."
     )
