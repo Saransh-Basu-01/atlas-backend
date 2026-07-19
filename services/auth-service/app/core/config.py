@@ -23,5 +23,15 @@ class Settings(BaseSettings):
     resend_api_key: str
     email_from: str
     frontend_url: str
+    REDIS_URL:str
+    REDIS_HOST:str
+    REDIS_PORT:int
+    REDIS_DB:int
+
+    @property
+    def redis_url(self):
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
 settings = Settings()
