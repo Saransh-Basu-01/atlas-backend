@@ -1,5 +1,3 @@
-# infrastructure/redis/client.py
-
 from __future__ import annotations
 
 from functools import lru_cache
