@@ -4,37 +4,11 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-import redis
+import redis.asyncio as redis
 from app.core.config import settings
-
 
 class RedisConfigError(RuntimeError):
     """Raised when Redis configuration is invalid or missing."""
-
-
-# def _get_redis_url() -> str:
-#     """
-#     Read the Redis URL from environment variables.
-
-#     Priority:
-#       1. REDIS_URL
-#       2. REDIS_HOST + REDIS_PORT + REDIS_DB
-#     """
-#     redis_url = settings.REDIS_URL
-#     if redis_url:
-#         return redis_url
-
-#     host = settings.REDIS_HOST
-#     port = settings.REDIS_PORT
-#     db = settings.REDIS_DB
-
-#     if not host:
-#         raise RedisConfigError(
-#             "Redis configuration missing. Set REDIS_URL or REDIS_HOST."
-#         )
-
-#     return f"redis://{host}:{port}/{db}"
-
 
 @lru_cache(maxsize=1)
 def get_redis_client() -> redis.Redis:
@@ -55,17 +29,13 @@ def get_redis_client() -> redis.Redis:
         retry_on_timeout=True,
     )
 
-    # Validate connection early
-    try:
-        client.ping()
-    except redis.RedisError as exc:
-        raise RedisConfigError(f"Failed to connect to Redis: {exc}") from exc
-
     return client
 
 
-def close_redis_client() -> None:
+async def close_redis_client() -> None:
     """Close the cached Redis client connection pool."""
-    client = get_redis_client()
-    client.connection_pool.disconnect()
-    get_redis_client.cache_clear()
+    # Check if client exists in cache without creating it
+    if get_redis_client.cache_info().currsize>0:
+        client = get_redis_client()
+        await client.aclose()
+        get_redis_client.cache_clear()
