@@ -5,14 +5,14 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.models import User
 from app.models.password_reset_token import PasswordResetToken
 from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.security.reset_token import generate_reset_token, hash_reset_token
 from app.security.password import hash_password
 from app.services.email_service import EmailService
-from fastapi import BackgroundTasks
+from app.jobs.email_jobs import PasswordResetEmailJob
+from app.infrastructure.queue.base import QueueClient
 
 class InvalidOrExpiredResetTokenError(Exception):
     pass
@@ -29,16 +29,16 @@ class PasswordResetService:
         self,
         user_repo: UserRepository,
         reset_token_repo: PasswordResetTokenRepository,
-        email_service:EmailService,
+        queue_client: QueueClient,
         session: AsyncSession,
     ):
         self.user_repo = user_repo
         self.reset_token_repo = reset_token_repo
-        self.email_service=email_service
+        self.queue_client = queue_client
         self.session = session
 
     async def forgot_password(self, email: str
-                              ) ->tuple[str,str]|None:
+                              ) ->None:
         """
         Creates a reset token for an existing user and returns RAW token
         (caller should email it to user).
@@ -66,10 +66,17 @@ class PasswordResetService:
             expires_at=expires_at,
             is_used=False,
         )
-
         await self.reset_token_repo.create(reset_token)
         await self.session.commit()
-        return user.email,raw_token
+        job = PasswordResetEmailJob.create(
+            recipient_email=user.email,
+            reset_token=raw_token,
+        )
+        await self.queue_client.enqueue(
+            queue_name="email_jobs",
+            payload=job.to_dict(),
+        )
+        return 
 
     async def reset_password(self, raw_token: str, new_password: str) -> None:
         """
