@@ -32,5 +32,5 @@ class PasswordResetEmailJob:
             recipient_email=data["recipient_email"],
             reset_token=data["reset_token"],
             job_id=data["job_id"],
-            created_at=["created_at"]
+            created_at=data["created_at"]
         )
