@@ -11,7 +11,7 @@ from app.repositories.user_repository import UserRepository
 from app.security.reset_token import generate_reset_token, hash_reset_token
 from app.security.password import hash_password
 from app.services.email_service import EmailService
-from app.jobs.email_jobs import PasswordResetEmailJob
+from app.jobs.email_jobs import PasswordResetEmailJob,PasswordChangedEmailJob
 from app.infrastructure.queue.base import QueueClient
 
 class InvalidOrExpiredResetTokenError(Exception):
@@ -105,4 +105,10 @@ class PasswordResetService:
         await self.reset_token_repo.mark_used(token_row.id)
 
         await self.session.commit()
-        await self.email_service.send_password_changed_email(user.email)
+        job=PasswordChangedEmailJob.create(
+            recipient_email=user.email,
+        )
+        await self.queue_client.enqueue(
+            queue_name="email_jobs",
+            payload=job.to_dict(),
+        )
