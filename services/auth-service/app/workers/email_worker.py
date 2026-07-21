@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-
+import json
 from app.infrastructure.queue.redis_queue import RedisQueueClient
 from app.jobs.email_jobs import PasswordResetEmailJob, PasswordChangedEmailJob
 from app.services.email_service import EmailService
@@ -43,19 +43,21 @@ class EmailWorker:
 
         while self._running:
             try:
-                job_data = await self.queue.dequeue(EMAIL_QUEUE_NAME)
+                result = await self.queue._client.brpop(EMAIL_QUEUE_NAME, timeout=1)
 
-                if job_data is not None:
-                    try:
-                        await self.process_job(job_data)
-                    except Exception as exc:
-                        logger.exception("Failed to process email job: %s", exc)
+                if result is None:
+                    continue
 
-                await asyncio.sleep(1)
+                _, raw_job = result
+                job_data = json.loads(raw_job)
+
+                try:
+                    await self.process_job(job_data)
+                except Exception as exc:
+                    logger.exception("Failed to process email job: %s", exc)
 
             except Exception as exc:
                 logger.exception("Worker loop error: %s", exc)
-                await asyncio.sleep(1)
 
     async def stop(self) -> None:
         self._running = False
