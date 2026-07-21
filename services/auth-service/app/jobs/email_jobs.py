@@ -11,6 +11,8 @@ class PasswordResetEmailJob:
     reset_token:str
     job_id: str
     created_at:str
+    attempts: int = 0
+    max_attempts: int = 3
 
     @classmethod
     def create(cls, recipient_email: str, reset_token: str) -> "PasswordResetEmailJob":
@@ -32,7 +34,9 @@ class PasswordResetEmailJob:
             recipient_email=data["recipient_email"],
             reset_token=data["reset_token"],
             job_id=data["job_id"],
-            created_at=data["created_at"]
+            created_at=data["created_at"],
+            attempts=int(data.get("attempts", 0)),
+            max_attempts=int(data.get("max_attempts", 3)),
         )
     
 
@@ -42,6 +46,9 @@ class PasswordChangedEmailJob:
     recipient_email: str
     job_id: str
     created_at:str
+    attempts: int = 0
+    max_attempts: int = 3
+
     @classmethod
     def create(cls, recipient_email: str) -> "PasswordChangedEmailJob":
         return cls(
@@ -60,5 +67,7 @@ class PasswordChangedEmailJob:
             job_type=data["job_type"],
             recipient_email=data["recipient_email"],
             job_id=data["job_id"],
-            created_at=data["created_at"]
+            created_at=data["created_at"],
+            attempts=int(data.get("attempts", 0)),
+            max_attempts=int(data.get("max_attempts", 3))
         )
