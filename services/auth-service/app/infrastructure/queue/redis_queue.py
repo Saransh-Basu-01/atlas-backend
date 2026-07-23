@@ -39,3 +39,8 @@ class RedisQueueClient(QueueClient):
     async def ack(self,processing_name:str,payload:dict[str,Any])->None:
         await self._client.lrem(processing_name,1,json.dumps(payload))
     
+    async def move_to_dead_queue(self,processing_name:str,dead_name:str,payload:dict[str,Any])->None:
+        raw=json.dumps(payload)
+        await self._client.lrem(processing_name,1,raw)
+        await self._client.lpush(dead_name,raw)
+    
