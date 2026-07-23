@@ -68,6 +68,16 @@ class EmailWorker:
                     job_data["attempts"]=attempts
                     job_data["last_attempt_at"]=datetime.now(timezone.utc).isoformat()
 
+                    if attempts>=int(job_data.get("max_attempts",MAX_ATTEMPTS)):
+                        await self.queue.move_to_dead_queue(
+                            EMAIL_PROCESSING_QUEUE,
+                            EMAIL_DEAD_LETTER_QUEUE,
+                            job_data
+                        )
+                        logger.error("Moved job to dead-letter queue: %s", job_data)
+                    else:
+                        
+
             except Exception as exc:
                 logger.exception("Worker loop error: %s", exc)
                 await asyncio.sleep(1)
