@@ -35,3 +35,7 @@ class RedisQueueClient(QueueClient):
         if raw is None:
             return None
         return json.loads(raw)
+    
+    async def ack(self,processing_name:str,payload:dict[str,Any])->None:
+        await self._client.lrem(processing_name,1,json.dumps(payload))
+    
