@@ -49,13 +49,14 @@ class EmailWorker:
 
         while self._running:
             try:
-                result = await self.queue._client.brpoplpush(
+                result = await self.queue.claim(
                     EMAIL_QUEUE_NAME,
                     EMAIL_PROCESSING_QUEUE,
                     timeout=1,
                 )
 
                 if result is None:
+                    await asyncio.sleep(1)
                     continue
 
                 raw_job = result
