@@ -28,7 +28,7 @@ class RedisQueueClient(QueueClient):
 
     async def close(self) -> None:
         """Close the Redis client and its connection pool."""
-        await close_redis_client()
+        return None
 
     async def claim(self,queue_name:str,processing_name:str,timeout:int=1)->dict[str,Any]|None:
         raw=await self._client.brpoplpush(queue_name,processing_name,timeout=timeout)
@@ -43,4 +43,12 @@ class RedisQueueClient(QueueClient):
         raw=json.dumps(payload)
         await self._client.lrem(processing_name,1,raw)
         await self._client.lpush(dead_name,raw)
+    
+    async def requeue_expired(self, processing_name: str, queue_name: str) -> None:
+        # simple placeholder; true visibility timeout needs a ZSET-based design
+        while True:
+            raw = await self._client.rpop(processing_name)
+            if raw is None:
+                break
+            await self._client.lpush(queue_name, raw)
     
