@@ -76,10 +76,15 @@ class EmailWorker:
                         )
                         logger.error("Moved job to dead-letter queue: %s", job_data)
                     else:
-                        
+                        await self.queue.ack(EMAIL_PROCESSING_QUEUE,job_data)
+                        await self.queue.enqueue(EMAIL_QUEUE_NAME,job_data)
 
             except Exception as exc:
                 logger.exception("Worker loop error: %s", exc)
                 await asyncio.sleep(1)
+            
+    async def stop(self) -> None:
+        self._running = False
+        await self.queue.close()
 
     
