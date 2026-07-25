@@ -202,12 +202,7 @@ async def forgot_password(
     payload: ForgotPasswordRequest,
     service: PasswordResetService = Depends(get_password_service),
 ):
-    result=await service.forgot_password(payload.email)
-    if result:
-        email,raw_token=result
-        b.add_task(
-            service.email_service.send_password_reset_email,email,raw_token
-        )
+    await service.forgot_password(payload.email)
     return ForgotPasswordResponse(
         message="If an account with that email exists, a reset link has been sent."
     )
