@@ -44,7 +44,7 @@ class RedisQueueClient(QueueClient):
         await self._client.lrem(processing_name,1,raw)
         await self._client.lpush(dead_name,raw)
     
-    async def requeue_expired(self, processing_name: str, queue_name: str) -> None:
+    async def requeue_all_processing_jobs(self, processing_name: str, queue_name: str) -> None:
         # simple placeholder; true visibility timeout needs a ZSET-based design
         while True:
             raw = await self._client.rpop(processing_name)
