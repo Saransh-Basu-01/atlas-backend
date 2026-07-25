@@ -28,7 +28,7 @@ class RedisQueueClient(QueueClient):
 
     async def close(self) -> None:
         """Close the Redis client and its connection pool."""
-        return None
+        await close_redis_client()
 
     async def claim(self,queue_name:str,processing_name:str,timeout:int=1)->dict[str,Any]|None:
         raw=await self._client.brpoplpush(queue_name,processing_name,timeout=timeout)
