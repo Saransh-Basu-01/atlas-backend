@@ -21,7 +21,7 @@ class PasswordResetEmailJob:
             recipient_email=recipient_email,
             reset_token=reset_token,
             job_id=str(uuid4()),
-            created_at=datetime.now(timezone.UTC).isoformat()
+            created_at=datetime.now(timezone.utc).isoformat()
         )
 
     def to_dict(self) -> dict[str, str]:
@@ -55,7 +55,7 @@ class PasswordChangedEmailJob:
             job_type="password_changed_email",
             recipient_email=recipient_email,
             job_id=str(uuid4()),
-            created_at=datetime.now(timezone.UTC).isoformat()
+            created_at=datetime.now(timezone.utc).isoformat()
         )
 
     def to_dict(self) -> dict[str, str]:
