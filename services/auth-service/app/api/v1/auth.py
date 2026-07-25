@@ -33,12 +33,10 @@ def get_user_service(session: AsyncSession = Depends(get_db)) -> AuthService:
 def get_password_service(session: AsyncSession = Depends(get_db)) -> PasswordResetService:
     repo = UserRepository(session)
     reset_token_repo = PasswordResetTokenRepository(session)
-    email_service=EmailService()
     queue_client=RedisQueueClient()
     return PasswordResetService(
     user_repo=repo,
     reset_token_repo=reset_token_repo,
-    email_service=email_service,
     queue_client=queue_client,
     session=session,
 ) 
@@ -202,13 +200,12 @@ async def logout_all_devices(
 @router.post("/forgot-password", response_model=ForgotPasswordResponse, status_code=status.HTTP_200_OK)
 async def forgot_password(
     payload: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     service: PasswordResetService = Depends(get_password_service),
 ):
     result=await service.forgot_password(payload.email)
     if result:
         email,raw_token=result
-        background_tasks.add_task(
+        b.add_task(
             service.email_service.send_password_reset_email,email,raw_token
         )
     return ForgotPasswordResponse(
