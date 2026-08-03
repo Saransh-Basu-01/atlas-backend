@@ -20,11 +20,26 @@ class RabbitmqQueueClient(QueueClient):
         return self._channel  
 
 
-    async def enqueue(self, queue_name:str, payload:dict[str,Any])->None:
-        return await super().enqueue(queue_name, json.dumps(payload))
+    async def enqueue(self, queue_name: str, payload: dict[str, Any]) -> None:
+        channel = await self._ensure_channel()
+        queue = await channel.declare_queue(queue_name, durable=True)
 
-    async def dequeue(self, queue_name:str)->dict[str,Any]|None:
-        return await super().dequeue(queue_name)
+        message = aio_pika.Message(
+            body=json.dumps(payload).encode("utf-8"),
+            content_type="application/json",
+        )
+        await channel.default_exchange.publish(message, routing_key=queue.name)
+
+    async def dequeue(self, queue_name: str) -> dict[str, Any] | None:
+        channel = await self._ensure_channel()
+        queue = await channel.declare_queue(queue_name, durable=True)
+
+        incoming = await queue.get(no_ack=False)
+        if incoming is None:
+            return None
+
+        async with incoming.process():
+            return json.loads(incoming.body.decode("utf-8"))
 
     async def close(self) -> None:
         await close_rabbitmq_connection()
