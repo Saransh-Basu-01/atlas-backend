@@ -42,4 +42,9 @@ class RabbitmqQueueClient(QueueClient):
             return json.loads(incoming.body.decode("utf-8"))
 
     async def close(self) -> None:
+        if self._channel is not None and not self._channel.is_closed:
+            await self._channel.close()
+        self._channel = None
+
         await close_rabbitmq_connection()
+        self._connection = None
