@@ -16,7 +16,7 @@ class RabbitmqQueueClient(QueueClient):
         if self._connection is None or self._connection.is_closed:
             self._connection=await get_rabbitmq_connection()
         if self._channel is None or self._channel.is_closed:
-            self._channel=await self._connection.channe()
+            self._channel=await self._connection.channel()
         return self._channel  
 
 
