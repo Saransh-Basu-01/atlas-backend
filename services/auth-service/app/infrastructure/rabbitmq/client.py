@@ -14,3 +14,11 @@ async def get_rabbitmq_connenction()->AbstractRobustConnection:
             settings.RABBITMQ_URL
         )
     return _rabbitmq_connection
+
+async def close_rabbitmq_connection() -> None:
+    global _rabbitmq_connection
+
+    if _rabbitmq_connection is not None and not _rabbitmq_connection.is_closed:
+        await _rabbitmq_connection.close()
+
+    _rabbitmq_connection = None
