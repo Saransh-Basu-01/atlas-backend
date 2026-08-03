@@ -19,6 +19,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "resend>=2.33.0",
     "redis>=8.0.1",
+    "aio-pika>=10.0.1",
 ]
 
 [dependency-groups]
