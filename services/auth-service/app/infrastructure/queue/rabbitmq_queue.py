@@ -7,7 +7,7 @@ from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
 from app.infrastructure.queue.base import QueueClient
 from app.infrastructure.rabbitmq.client import get_rabbitmq_connection,close_rabbitmq_connection
 
-class RabbitmqQueueClient(QueueClient):
+class RabbitMQQueueClient(QueueClient):
     def __init__(self)->None:
         self._connection:AbstractRobustConnection|None=None
         self._channel:AbstractRobustChannel|None=None
