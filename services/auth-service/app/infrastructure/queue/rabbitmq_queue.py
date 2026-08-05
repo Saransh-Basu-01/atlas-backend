@@ -30,12 +30,20 @@ class RabbitMQQueueClient(QueueClient):
             type=ExchangeType.DIRECT,
             durable=True
         )
-
+        queue=await channel.declare_exchange(
+            queue_name,
+            durable=True
+        )
+        await queue.bind(exchange,routing_key=EMAIL_ROUTING_KEY)
         message = aio_pika.Message(
             body=json.dumps(payload).encode("utf-8"),
             content_type="application/json",
+            delivery_mode=DeliveryMode.PERSISTENT,
         )
-        await channel.default_exchange.publish(message, routing_key=queue.name)
+        await exchange.publish(
+            message,
+            routing_key=EMAIL_ROUTING_KEY,
+        )
 
     async def dequeue(self, queue_name: str) -> dict[str, Any] | None:
         channel = await self._ensure_channel()
