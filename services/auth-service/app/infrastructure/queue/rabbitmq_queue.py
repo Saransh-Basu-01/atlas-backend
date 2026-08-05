@@ -30,7 +30,7 @@ class RabbitMQQueueClient(QueueClient):
             type=ExchangeType.DIRECT,
             durable=True
         )
-        queue=await channel.declare_exchange(
+        queue=await channel.declare_queue(
             queue_name,
             durable=True
         )
