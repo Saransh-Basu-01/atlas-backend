@@ -7,6 +7,8 @@ from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
 from app.infrastructure.queue.base import QueueClient
 from app.infrastructure.rabbitmq.client import get_rabbitmq_connection,close_rabbitmq_connection
 
+EMAIL_EXCHANGE_NAME = "email.exchange"
+EMAIL_ROUTING_KEY = "email.send"
 class RabbitMQQueueClient(QueueClient):
     def __init__(self)->None:
         self._connection:AbstractRobustConnection|None=None
