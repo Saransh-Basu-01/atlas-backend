@@ -52,7 +52,7 @@ class RabbitMQQueueClient(QueueClient):
         )
         await exchange.publish(
             message,
-            routing_key=EMAIL_ROUTING_KEY,
+            routing_key=self._routing_key,
         )
 
     async def dequeue(self, queue_name: str) -> dict[str, Any] | None:

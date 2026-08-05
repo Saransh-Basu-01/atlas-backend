@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any
-
+from app.infrastructure.queue.message import QueueMessage
 
 class QueueClient(ABC):
     """
@@ -24,9 +24,10 @@ class QueueClient(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    async def dequeue(self, queue_name: str) -> dict[str, Any] | None:
+    async def dequeue(self, queue_name: str) ->  QueueMessage | None:
         """
-        Remove and return the next job/message from the queue.
+        Remove and return the next message from the queue.
         Returns None if the queue is empty.
         """
         raise NotImplementedError
+    
