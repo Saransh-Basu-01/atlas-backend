@@ -7,7 +7,8 @@ from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
 from app.infrastructure.queue.base import QueueClient
 from app.infrastructure.rabbitmq.client import get_rabbitmq_connection,close_rabbitmq_connection
-
+from app.infrastructure.queue.message import QueueMessage
+from app.infrastructure.queue.rabbitmq_message import RabbitMQMessage
 EMAIL_EXCHANGE_NAME = "email.exchange"
 EMAIL_ROUTING_KEY = "email.send"
 class RabbitMQQueueClient(QueueClient):
@@ -55,7 +56,7 @@ class RabbitMQQueueClient(QueueClient):
             routing_key=self._routing_key,
         )
 
-    async def dequeue(self, queue_name: str) -> dict[str, Any] | None:
+    async def dequeue(self, queue_name: str) -> QueueMessage | None:
         channel = await self._ensure_channel()
         queue = await channel.declare_queue(queue_name, durable=True)
 
@@ -63,8 +64,7 @@ class RabbitMQQueueClient(QueueClient):
         if incoming is None:
             return None
 
-        async with incoming.process():
-            return json.loads(incoming.body.decode("utf-8"))
+        return RabbitMQMessage(incoming)
 
     async def close(self) -> None:
         if self._channel is not None and not self._channel.is_closed:
