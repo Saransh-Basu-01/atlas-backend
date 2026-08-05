@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 import aio_pika
+from aio_pika import DeliveryMode, ExchangeType
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
 from app.infrastructure.queue.base import QueueClient
 from app.infrastructure.rabbitmq.client import get_rabbitmq_connection,close_rabbitmq_connection
@@ -24,7 +25,11 @@ class RabbitMQQueueClient(QueueClient):
 
     async def enqueue(self, queue_name: str, payload: dict[str, Any]) -> None:
         channel = await self._ensure_channel()
-        queue = await channel.declare_queue(queue_name, durable=True)
+        exchange=await channel.declare_exchange(
+            EMAIL_EXCHANGE_NAME,
+            type=ExchangeType.DIRECT,
+            durable=True
+        )
 
         message = aio_pika.Message(
             body=json.dumps(payload).encode("utf-8"),
