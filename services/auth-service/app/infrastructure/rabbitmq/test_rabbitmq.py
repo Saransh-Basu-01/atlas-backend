@@ -4,7 +4,10 @@ from app.infrastructure.queue.rabbitmq_queue import RabbitMQQueueClient
 
 
 async def main() -> None:
-    client = RabbitMQQueueClient()
+    client = RabbitMQQueueClient( 
+        exchange_name="email.exchange",
+        routing_key="email.send"
+        )
 
     payload = {
         "job_type": "test_email",
