@@ -6,6 +6,9 @@ from typing import Any
 from app.infrastructure.queue.rabbitmq_queue import RabbitMQQueueClient
 from app.jobs.email_jobs import PasswordResetEmailJob, PasswordChangedEmailJob
 from app.services.email_service import EmailService
+from aio_pika.abc import AbstractIncomingMessage
+
+from app.infrastructure.queue.rabbitmq_message import RabbitMQMessage
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +42,8 @@ class RabbitMQEmailWorker:
         else:
             raise ValueError(f"Unknown job type: {job_type}")
 
-    async def handle_message(self,message)->None:
+    async def handle_message(self,incoming_message:AbstractIncomingMessage)->None:
+        message = RabbitMQMessage(incoming_message)
         try:
             await self.process_job(message.payload)
             await message.ack()
