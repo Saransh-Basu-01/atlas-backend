@@ -48,12 +48,14 @@ class RabbitMQEmailWorker:
             await self.process_job(message.payload)
             await message.ack()
         except Exception:
+            logger.exception(
+            "Failed to process email job: %s",
+            message.payload.get("job_type"),
+            )
             await message.nack(requeue=True)
 
 
     async def run(self) -> None:
-        self._running = True
-
         logger.info("RabbitMQ Email Worker started")
 
         try:
