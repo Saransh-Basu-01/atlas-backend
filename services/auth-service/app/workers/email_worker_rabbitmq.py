@@ -52,9 +52,27 @@ class RabbitMQEmailWorker:
 
 
     async def run(self) -> None:
-        queue=await self.queue.get_queue("email.queue")
-        await queue.consume(self.handle_message)
-        await asyncio.Future()
+        self._running = True
+
+        logger.info("RabbitMQ Email Worker started")
+
+        try:
+            await self.queue.consume(
+                "email.queue",
+                self.handle_message,
+            )
+
+            # Keep the worker alive while RabbitMQ invokes
+            # handle_message() whenever a new message arrives.
+            await asyncio.Future()
+
+        except asyncio.CancelledError:
+            logger.info("RabbitMQ Email Worker cancelled")
+            raise
+
+        finally:
+            logger.info("Shutting down RabbitMQ Email Worker")
+            await self.queue.close()
 
                
             
