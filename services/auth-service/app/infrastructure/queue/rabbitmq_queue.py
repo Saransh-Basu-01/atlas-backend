@@ -25,6 +25,7 @@ class RabbitMQQueueClient(QueueClient):
             self._connection=await get_rabbitmq_connection()
         if self._channel is None or self._channel.is_closed:
             self._channel=await self._connection.channel()
+            await self._channel.set_qos(prefetch_count=1)
         return self._channel  
 
     async def _ensure_topology(self, queue_name: str) -> tuple[aio_pika.abc.AbstractRobustExchange, aio_pika.abc.AbstractRobustQueue]:
