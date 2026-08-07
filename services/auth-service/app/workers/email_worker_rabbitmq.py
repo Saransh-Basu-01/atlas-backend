@@ -39,27 +39,19 @@ class RabbitMQEmailWorker:
         else:
             raise ValueError(f"Unknown job type: {job_type}")
 
-    async def run(self) -> None:
-        self._running = True
-        logger.info(
-            "Successfully processed email job %s",
-            message.payload.get("job_type")
-        )
-
+    async def handle_message(self,message)->None:
         try:
-            while self._running:
-                message=await self.queue.dequeue("email.queue")
-                if message is None:
-                   await asyncio.sleep(1)
-                   continue
-                try:
-                    await self.process_job(message.payload)
-                    await message.ack()
-                except Exception as exc:
-                    logger.exception("Failed to process email job")
-                    await message.nack(requeue=True)
-        finally:
-            await self.queue.close()
+            await self.process_job(message.payload)
+            await message.ack()
+        except Exception:
+            await message.nack(requeue=True)
+
+
+    async def run(self) -> None:
+        queue=await self.queue.get_queue("email.queue")
+        await queue.consume(self.handle_message)
+        await asyncio.Future()
+
                
             
     async def stop(self) -> None:

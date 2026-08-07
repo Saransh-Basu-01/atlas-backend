@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 from typing import Any
 import aio_pika
+from collections.abc import Awaitable, Callable
 from aio_pika import DeliveryMode, ExchangeType
-from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
+from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel,AbstractIncomingMessage
 from app.infrastructure.queue.base import QueueClient
 from app.infrastructure.rabbitmq.client import get_rabbitmq_connection,close_rabbitmq_connection
 from app.infrastructure.queue.message import QueueMessage
@@ -73,3 +74,27 @@ class RabbitMQQueueClient(QueueClient):
 
         await close_rabbitmq_connection()
         self._connection = None
+
+    async def consume(
+    self,
+    queue_name: str,
+    callback: Callable[[AbstractIncomingMessage], Awaitable[None]],) -> None:
+        channel = await self._ensure_channel()
+
+        exchange = await channel.declare_exchange(
+            EMAIL_EXCHANGE_NAME,
+            ExchangeType.DIRECT,
+            durable=True,
+        )
+
+        queue = await channel.declare_queue(
+            queue_name,
+            durable=True,
+        )
+
+        await queue.bind(
+            exchange,
+            routing_key=EMAIL_ROUTING_KEY,
+        )
+
+        await queue.consume(callback)
