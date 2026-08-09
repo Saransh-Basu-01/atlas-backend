@@ -138,7 +138,7 @@ class RabbitMQQueueClient(QueueClient):
                     "x-original-exchange": message.exchange,
                 }
         )
-        await dead_exchange.publish(dead_message,routing_keyy=DEAD_ROUTING_KEY)
+        await dead_exchange.publish(dead_message,routing_key=DEAD_ROUTING_KEY)
         await message.ack()
 
     def get_retry_count(self, message: AbstractIncomingMessage) -> int:

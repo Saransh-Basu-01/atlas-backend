@@ -6,43 +6,7 @@ from aio_pika.abc import AbstractIncomingMessage
 
 from app.infrastructure.queue.rabbitmq_queue import RabbitMQQueueClient
 
-
 MAX_RETRIES = 3
-
-
-async def handle_test_message(
-    queue_client: RabbitMQQueueClient,
-    incoming: AbstractIncomingMessage,
-) -> None:
-    headers = incoming.headers or {}
-    retry_count = int(headers.get("x-retry-count", 0))
-    payload: dict[str, Any] = json.loads(incoming.body.decode("utf-8"))
-
-    print(f"[consume] payload={payload} retry_count={retry_count}")
-
-    # Intentionally fail only for retry_test
-    if payload.get("job_type") == "retry_test":
-        print("[fail] Testing RabbitMQ retry")
-
-        was_retried = await queue_client.retry_message(
-            incoming,
-            max_retries=MAX_RETRIES,
-        )
-
-        if was_retried:
-            print(f"[retry] republished with x-retry-count={retry_count + 1}")
-        else:
-            print("[dlq] max retries exceeded, moving to email.dead.queue")
-            await queue_client.move_to_dead_queue(
-                message=incoming,
-                dead_queue_name="email.dead.queue",
-                payload=payload,
-            )
-        return
-
-    # Non-test messages: ack normally
-    await incoming.ack()
-    print("[ack] non-test message acked")
 
 
 async def main() -> None:
@@ -51,17 +15,36 @@ async def main() -> None:
         routing_key="email.send",
     )
 
+    async def callback(incoming: AbstractIncomingMessage) -> None:
+        payload: dict[str, Any] = json.loads(incoming.body.decode("utf-8"))
+        retry_count = queue_client.get_retry_count(incoming)
+
+        print(f"[consume] payload={payload} retry_count={retry_count}")
+
+        if payload.get("job_type") == "retry_test":
+            print("[fail] Testing RabbitMQ retry")
+            was_retried = await queue_client.retry_message(
+                incoming,
+                max_retries=MAX_RETRIES,
+            )
+            if was_retried:
+                print(f"[retry] republished with x-retry-count={retry_count + 1}")
+            else:
+                print("[dlq] max retries exceeded, moving to email.dead.queue")
+                await queue_client.move_to_dead_queue(
+                    message=incoming,
+                    dead_queue_name="email.dead.queue",
+                    payload=payload,
+                )
+            return
+
+        await incoming.ack()
+        print("[ack] non-test message acked")
+
     try:
         print("Listening on email.queue ... Press Ctrl+C to stop.")
-        while True:
-            msg = await queue_client.dequeue("email.queue")
-            if msg is None:
-                await asyncio.sleep(1)
-                continue
-
-            # unwrap underlying aio-pika message object
-            incoming = msg._message  # matches your RabbitMQMessage wrapper style
-            await handle_test_message(queue_client, incoming)
+        await queue_client.consume("email.queue", callback)
+        await asyncio.Future()  # keep running
     finally:
         await queue_client.close()
 
