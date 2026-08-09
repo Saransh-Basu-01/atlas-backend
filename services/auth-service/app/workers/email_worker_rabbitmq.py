@@ -10,7 +10,7 @@ from app.services.email_service import EmailService
 from aio_pika.abc import AbstractIncomingMessage
 from aio_pika import DeliveryMode, ExchangeType
 from app.infrastructure.queue.rabbitmq_message import RabbitMQMessage
-
+MAX_ATTEMPTS = 3
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +55,7 @@ class RabbitMQEmailWorker:
             )
             was_retried=await self.queue.retry_message(
                 incoming_message,
-                max_retries=3
+                max_retries=MAX_ATTEMPTS,
             )
             if not was_retried:
                 await self.queue.move_to_dead_queue(
