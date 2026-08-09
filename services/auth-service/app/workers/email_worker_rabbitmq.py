@@ -27,6 +27,9 @@ class RabbitMQEmailWorker:
     async def process_job(self, job_data: dict[str, Any]) -> None:
         job_type = job_data.get("job_type")
 
+        if job_type == "retry_test":
+            raise RuntimeError("Testing RabbitMQ retry")
+        
         if job_type == "password_reset_email":
             job = PasswordResetEmailJob.from_dict(job_data)
             await self.email_service.send_password_reset_email(
