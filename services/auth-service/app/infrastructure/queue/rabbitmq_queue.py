@@ -140,4 +140,13 @@ class RabbitMQQueueClient(QueueClient):
         )
         await dead_exchange.publish(dead_message,routing_keyy=DEAD_ROUTING_KEY)
         await message.ack()
+
+    def get_retry_count(self, message: AbstractIncomingMessage) -> int:
+        headers = message.headers or {}
+        value = headers.get("x-retry-count", 0)
+
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
         
