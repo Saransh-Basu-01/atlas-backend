@@ -53,27 +53,16 @@ class RabbitMQEmailWorker:
             "Failed to process email job: %s",
             message.payload.get("job_type"),
             )
-            current_retry=self.queue.get_retry_count(incoming_message)
-            next_retry=current_retry+1
-
-            # 2) copy headers and increment retry count
-            headers = dict(incoming_message.headers or {})
-            headers["x-retry-count"] = next_retry
-            headers["x-original-routing-key"] = incoming_message.routing_key
-            headers["x-original-exchange"] = incoming_message.exchange
-
-            republished = aio_pika.Message(
-            body=incoming_message.body,
-            content_type=incoming_message.content_type or "application/json",
-            delivery_mode=DeliveryMode.PERSISTENT,
-            headers=headers,
+            was_retried=await self.queue.retry_message(
+                incoming_message,
+                max_retries=3
             )
-
-            await incoming_message.channel.default_exchange.publish(
-                republished,
-                routing_key=incoming_message.routing_key
-            )
-            await message.ack()
+            if not was_retried:
+                await self.queue.move_to_dead_queue(
+                    message=incoming_message,
+                    dead_queue_name="email.dead.queue",
+                    payload=message.payload
+                )
 
 
 
