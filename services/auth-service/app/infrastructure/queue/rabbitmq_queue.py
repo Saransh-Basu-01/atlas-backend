@@ -12,6 +12,10 @@ from app.infrastructure.queue.message import QueueMessage
 from app.infrastructure.queue.rabbitmq_message import RabbitMQMessage
 EMAIL_EXCHANGE_NAME = "email.exchange"
 EMAIL_ROUTING_KEY = "email.send"
+
+DEAD_EXCHANGE_NAME = "email.dead.exchange"
+DEAD_ROUTING_KEY = "email.dead"
+
 class RabbitMQQueueClient(QueueClient):
     def __init__(self,exchange_name: str,
         routing_key: str,)->None:
