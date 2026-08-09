@@ -149,4 +149,35 @@ class RabbitMQQueueClient(QueueClient):
             return int(value)
         except (TypeError, ValueError):
             return 0
+
+    async def retry_message(
+    self, 
+    message: AbstractIncomingMessage, 
+    max_retries: int = 3
+    )-> bool:
+        """Returns True if retried, False if max retries exceeded."""
         
+        current_retry_count = self.get_retry_count(message)
+        
+        if current_retry_count >= max_retries:
+            # We tried enough times, send to the graveyard!
+            return False
+        
+        # We still have retries left! Publish it back to the main exchange
+        exchange, _ = await self._ensure_topology("email.queue")
+        
+        # Create the new message, INCREMENTING the header counter
+        retried_message = aio_pika.Message(
+            body=message.body,
+            content_type="application/json",
+            delivery_mode=DeliveryMode.PERSISTENT,
+            headers={
+                **(message.headers or {}),             # Keep existing headers
+                "x-retry-count": current_retry_count + 1 # Increment!
+            }
+        )
+        
+        await exchange.publish(retried_message, routing_key=self._routing_key)
+        await message.ack() # Ack the original delivery so RabbitMQ doesn't redeliver it
+        
+        return True
