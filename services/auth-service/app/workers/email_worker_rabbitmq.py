@@ -1,13 +1,14 @@
 #Rabbitmq email worker implementation
 from __future__ import annotations
 import asyncio
+import aio_pika
 import logging
 from typing import Any
 from app.infrastructure.queue.rabbitmq_queue import RabbitMQQueueClient
 from app.jobs.email_jobs import PasswordResetEmailJob, PasswordChangedEmailJob
 from app.services.email_service import EmailService
 from aio_pika.abc import AbstractIncomingMessage
-
+from aio_pika import DeliveryMode, ExchangeType
 from app.infrastructure.queue.rabbitmq_message import RabbitMQMessage
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,29 @@ class RabbitMQEmailWorker:
             "Failed to process email job: %s",
             message.payload.get("job_type"),
             )
-            await message.nack(requeue=True)
+            current_retry=self.queue.get_retry_count(incoming_message)
+            next_retry=current_retry+1
+
+            # 2) copy headers and increment retry count
+            headers = dict(incoming_message.headers or {})
+            headers["x-retry-count"] = next_retry
+            headers["x-original-routing-key"] = incoming_message.routing_key
+            headers["x-original-exchange"] = incoming_message.exchange
+
+            republished = aio_pika.Message(
+            body=incoming_message.body,
+            content_type=incoming_message.content_type or "application/json",
+            delivery_mode=DeliveryMode.PERSISTENT,
+            headers=headers,
+            )
+
+            await incoming_message.channel.default_exchange.publish(
+                republished,
+                routing_key=incoming_message.routing_key
+            )
+            await message.ack()
+
+
 
 
     async def run(self) -> None:
