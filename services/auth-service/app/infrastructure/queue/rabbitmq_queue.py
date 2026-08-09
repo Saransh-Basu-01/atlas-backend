@@ -49,6 +49,18 @@ class RabbitMQQueueClient(QueueClient):
         await queue.bind(exchange, routing_key=self._routing_key)
         return exchange, queue
 
+    async def _ensure_dead_topology(
+            self,dead_queue_name:str
+    )->tuple[aio_pika.abc.AbstractRobustExchange,aio_pika.abc.AbstractRobustQueue]:
+        channel=await self._ensure_channel()
+        dead_exchange=await channel.declare_exchange(
+            DEAD_EXCHANGE_NAME,
+            type=ExchangeType.DIRECT,
+            durable=True
+        )
+        dead_queue=await channel.declare_queue(dead_queue_name,durable=True)
+        await dead_queue.bind(dead_exchange,routing_key=DEAD_ROUTING_KEY)
+        return dead_exchange,dead_queue
 
     async def enqueue(self, queue_name: str, payload: dict[str, Any]) -> None:
         exchange, _ =await self._ensure_topology(queue_name)
