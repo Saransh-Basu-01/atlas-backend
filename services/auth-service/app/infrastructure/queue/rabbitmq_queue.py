@@ -115,3 +115,29 @@ class RabbitMQQueueClient(QueueClient):
         )
 
         await queue.consume(callback)
+
+    async def move_to_dead_queue(
+        self,
+        message:AbstractIncomingMessage,
+        dead_queue_name:str,
+        payload:dict[str,Any]|None=None,
+    )->None:
+        dead_exchange,_=await self._ensure_dead_topology(dead_queue_name)
+        body=(
+            json.dumps(payload).encode('utf-8')
+            if payload is not None
+            else message.body
+        )
+        dead_message=aio_pika.Message(
+                body=body,
+                content_type="application/json",
+                delivery_mode=DeliveryMode.PERSISTENT,
+                headers={
+                    **(message.headers or {}),
+                    "x-original-routing-key": message.routing_key,
+                    "x-original-exchange": message.exchange,
+                }
+        )
+        await dead_exchange.publish(dead_message,routing_keyy=DEAD_ROUTING_KEY)
+        await message.ack()
+        
