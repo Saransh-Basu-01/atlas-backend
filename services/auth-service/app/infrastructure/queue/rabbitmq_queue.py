@@ -159,7 +159,7 @@ class RabbitMQQueueClient(QueueClient):
         
         current_retry_count = self.get_retry_count(message)
         
-        if current_retry_count >= max_retries:
+        if current_retry_count + 1>= max_retries:
             # We tried enough times, send to the graveyard!
             return False
         
