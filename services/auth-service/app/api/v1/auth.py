@@ -33,7 +33,10 @@ def get_user_service(session: AsyncSession = Depends(get_db)) -> AuthService:
 def get_password_service(session: AsyncSession = Depends(get_db)) -> PasswordResetService:
     repo = UserRepository(session)
     reset_token_repo = PasswordResetTokenRepository(session)
-    queue_client=RedisQueueClient()
+    queue_client=RabbitMQQueueClient(
+        exchange_name="email.exchange",
+        routing_key="email.send",
+    )
     return PasswordResetService(
     user_repo=repo,
     reset_token_repo=reset_token_repo,
