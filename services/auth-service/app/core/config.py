@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     REDIS_PORT:int
     REDIS_DB:int
     RABBITMQ_URL:str
+    GOOGLE_CLIENT_ID:str
+    GOOGLE_CLIENT_SECRET:str
+    GOOGLE_REDIRECT_URI:str
 
     @property
     def redis_url(self):
