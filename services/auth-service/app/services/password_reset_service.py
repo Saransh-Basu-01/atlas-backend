@@ -10,7 +10,6 @@ from app.repositories.password_reset_token_repository import PasswordResetTokenR
 from app.repositories.user_repository import UserRepository
 from app.security.reset_token import generate_reset_token, hash_reset_token
 from app.security.password import hash_password
-from app.services.email_service import EmailService
 from app.jobs.email_jobs import PasswordResetEmailJob,PasswordChangedEmailJob
 from app.infrastructure.queue.base import QueueClient
 
