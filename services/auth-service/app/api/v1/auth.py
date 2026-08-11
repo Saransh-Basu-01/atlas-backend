@@ -12,9 +12,8 @@ from app.core.config import settings
 from app.repositories.password_reset_token_repository import PasswordResetTokenRepository
 from app.services.email_service import EmailService
 from app.services.password_reset_service import PasswordResetService,InvalidOrExpiredResetTokenError
-from fastapi import BackgroundTasks
 from app.infrastructure.queue.redis_queue import RedisQueueClient
-from app.infrastructure.redis import client
+
 
 
 
