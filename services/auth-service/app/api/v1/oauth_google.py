@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import RedirectResponse, JSONResponse
 
 from app.dependencies.oauth import get_google_oauth_service
 from app.services.oauth_service import GoogleOAuthService
@@ -11,8 +11,60 @@ router = APIRouter(prefix="/auth/google", tags=["auth"])
 
 @router.get("/login")
 def google_login(
+    request: Request,
     oauth_service: GoogleOAuthService = Depends(get_google_oauth_service),
 ) -> RedirectResponse:
-    authorization_url, _state = oauth_service.get_authorization_url()
-    # state will be persisted later when callback is implemented
-    return RedirectResponse(url=authorization_url, status_code=302)
+    authorization_url, state = oauth_service.get_authorization_url()
+
+    # TEMP: store state in session (requires SessionMiddleware in main.py)
+    request.session["google_oauth_state"] = state
+
+    return RedirectResponse(url=authorization_url, status_code=status.HTTP_302_FOUND)
+
+
+@router.get("/callback")
+def google_callback(
+    request: Request,
+    code: str | None = Query(default=None),
+    state: str | None = Query(default=None),
+    error: str | None = Query(default=None),
+    error_description: str | None = Query(default=None),
+) -> JSONResponse:
+    # 1) Google returned an OAuth error
+    if error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth error: {error} ({error_description or 'no description'})",
+        )
+
+    # 2) Validate required params
+    if not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing authorization code",
+        )
+    if not state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing state",
+        )
+
+    # 3) CSRF protection: compare returned state with session state
+    expected_state = request.session.get("google_oauth_state")
+    if not expected_state or state != expected_state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OAuth state",
+        )
+
+    # one-time use state
+    request.session.pop("google_oauth_state", None)
+
+    # 4) Next sprint: exchange code, verify id token, login/signup user
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "message": "Google callback received and state verified",
+            "code_preview": code[:12] + "...",
+        },
+    )
