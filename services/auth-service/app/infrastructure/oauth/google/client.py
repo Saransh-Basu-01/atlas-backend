@@ -3,12 +3,14 @@ from __future__ import annotations
 import secrets
 from urllib.parse import urlencode
 import httpx
+TOKEN_URL = "https://oauth2.googleapis.com/token"
 
 class GoogleOAuthClient:
     AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 
-    def __init__(self, client_id: str, redirect_uri: str) -> None:
+    def __init__(self, client_id: str,client_secret: str, redirect_uri: str) -> None:
         self._client_id = client_id
+        self._client_secret = client_secret
         self._redirect_uri = redirect_uri
 
     def get_authorization_url(self) -> tuple[str, str]:
