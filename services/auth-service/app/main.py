@@ -6,6 +6,8 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.oauth_google import router as oauth_router
 
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from app.core.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -43,7 +45,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    same_site="lax",
+    https_only=False,  # True in production with HTTPS
+)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(oauth_router)
