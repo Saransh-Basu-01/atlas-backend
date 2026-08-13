@@ -54,3 +54,20 @@ class ResetPasswordRequest(BaseModel):
 
 class ResetPasswordResponse(BaseModel):
     message: str
+
+class GoogleLoginRequest(BaseModel):
+    id_token: str = Field(min_length=20)
+
+
+class GoogleIdentity(BaseModel):
+    sub: str
+    email: EmailStr
+    email_verified: bool = False
+    name: str | None = None
+    picture: str | None = None
+
+class OAuthAccountCreate(BaseModel):
+    user_id: int
+    provider: str = Field(min_length=2, max_length=30)   # "google"
+    provider_user_id: str = Field(min_length=1, max_length=255)
+    provider_email: EmailStr | None = None
