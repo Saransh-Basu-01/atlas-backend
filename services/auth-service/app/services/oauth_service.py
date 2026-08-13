@@ -11,3 +11,5 @@ class GoogleOAuthService:
         # Service delegates construction details to client
         return self._google_client.get_authorization_url()
 
+    async def exchange_code(self,code:str)->dict:
+        return await self._google_client.exchange_code(code)
