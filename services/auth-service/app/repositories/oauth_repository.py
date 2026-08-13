@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.oauth_accounts import OAuthAccount
 
 
-class OAuthAccountRepo:
+class OAuthAccountRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
