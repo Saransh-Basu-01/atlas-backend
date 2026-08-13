@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 from urllib.parse import urlencode
-
+import httpx
 
 class GoogleOAuthClient:
     AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -31,3 +31,25 @@ class GoogleOAuthClient:
 
         authorization_url = f"{self.AUTH_BASE_URL}?{urlencode(params)}"
         return authorization_url, state
+
+    async def exchange_code(self, code: str) -> dict:
+        payload = {
+            "code": code,
+            "client_id": self._client_id,
+            "client_secret": self._client_secret,
+            "redirect_uri": self._redirect_uri,
+            "grant_type": "authorization_code",
+        }
+
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(
+                self.TOKEN_URL,
+                data=payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+
+        if response.status_code != 200:
+            # include Google response body for easier debugging
+            raise RuntimeError(f"Google token exchange failed: {response.text}")
+
+        return response.json()
