@@ -3,10 +3,14 @@ from __future__ import annotations
 import secrets
 from urllib.parse import urlencode
 import httpx
-TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
+
 
 class GoogleOAuthClient:
     AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+    TOKEN_URL = "https://oauth2.googleapis.com/token"
 
     def __init__(self, client_id: str,client_secret: str, redirect_uri: str) -> None:
         self._client_id = client_id
@@ -58,4 +62,3 @@ class GoogleOAuthClient:
 
 
     async def verify_id_token(id_token):
-        
