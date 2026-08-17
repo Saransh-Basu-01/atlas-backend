@@ -6,7 +6,7 @@ import httpx
 
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
-
+from app.schemas.schemas import GoogleIdentity
 
 class GoogleOAuthClient:
     AUTH_BASE_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -62,4 +62,16 @@ class GoogleOAuthClient:
         return response.json()
 
 
-    async def verify_id_token(id_token):
+    async def verify_id_token(self,id_token:str)->GoogleIdentity:
+        claims=google_id_token.verify_oauth2_token(
+            id_token,
+            self._google_request,
+            audience=self._client_id
+        )
+        return GoogleIdentity(
+            sub=claims["sub"],
+            email=claims["email"],
+            email_verified=claims.get("email_verified", False),
+            name=claims.get("name"),
+            picture=claims.get("picture"),
+        )
