@@ -55,3 +55,7 @@ class GoogleOAuthClient:
             raise RuntimeError(f"Google token exchange failed: {response.text}")
 
         return response.json()
+
+
+    async def verify_id_token(id_token):
+        

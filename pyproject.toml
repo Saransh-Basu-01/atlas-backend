@@ -20,6 +20,7 @@ dependencies = [
     "resend>=2.33.0",
     "redis>=8.0.1",
     "aio-pika>=10.0.1",
+    "google-auth>=2.56.3",
 ]
 
 [dependency-groups]
