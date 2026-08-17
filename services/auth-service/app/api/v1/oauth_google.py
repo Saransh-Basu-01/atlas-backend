@@ -61,11 +61,19 @@ async def google_callback(
     # one-time use state
     request.session.pop("google_oauth_state", None)
 
-    # 4) Next sprint: exchange code, verify id token, login/signup user
+    try:
+        token_response=await oauth_service.exchange_code(code)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to exchange authorization code with Google",
+        ) from exc
+   
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "message": "Google callback received and state verified",
-            "code_preview": code[:12] + "...",
+            "message": "Google token exchange successful",
+            "has_id_token": "id_token" in token_response,
+            "has_access_token": "access_token" in token_response,
         },
     )
