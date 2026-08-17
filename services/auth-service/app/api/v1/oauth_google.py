@@ -23,7 +23,7 @@ def google_login(
 
 
 @router.get("/callback")
-def google_callback(
+async def google_callback(
     request: Request,
     code: str | None = Query(default=None),
     state: str | None = Query(default=None),
