@@ -16,6 +16,7 @@ class GoogleOAuthClient:
         self._client_id = client_id
         self._client_secret = client_secret
         self._redirect_uri = redirect_uri
+        self._google_request=google_requests.Request()
 
     def get_authorization_url(self) -> tuple[str, str]:
         """
