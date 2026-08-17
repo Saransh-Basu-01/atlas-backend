@@ -29,6 +29,7 @@ async def google_callback(
     state: str | None = Query(default=None),
     error: str | None = Query(default=None),
     error_description: str | None = Query(default=None),
+    oauth_service:GoogleOAuthService=Depends(get_google_oauth_service)
 ) -> JSONResponse:
     # 1) Google returned an OAuth error
     if error:
