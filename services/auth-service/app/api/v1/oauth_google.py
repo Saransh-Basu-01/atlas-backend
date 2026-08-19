@@ -63,7 +63,7 @@ async def google_callback(
 
     try:
         token_response=await oauth_service.exchange_code(code)
-        id_token = token_response["id_token"]
+        id_token = token_response.get("id_token")
        
         if not id_token:
             raise HTTPException(
