@@ -2,10 +2,17 @@ from __future__ import annotations
 from app.models.oauth_accounts import OAuthAccount
 from app.schemas.schemas import GoogleIdentity,GoogleLoginRequest,OAuthAccountCreate
 from app.infrastructure.oauth.google.client import GoogleOAuthClient
-
+from app.repositories.user_repository import UserRepository
+from app.repositories.oauth_repository import OAuthAccountRepository
 class GoogleOAuthService:
-    def __init__(self, google_client: GoogleOAuthClient) -> None:
+    def __init__(self, 
+        google_client:GoogleOAuthClient,
+        user_repository=UserRepository,
+        oauth_account_repository=OAuthAccountRepository,
+                 ) -> None:
         self._google_client = google_client
+        self._user_repository = user_repository
+        self._oauth_account_repository = oauth_account_repository
 
     def get_authorization_url(self) -> tuple[str, str]:
         # Service delegates construction details to client
