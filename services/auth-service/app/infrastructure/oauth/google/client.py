@@ -62,7 +62,7 @@ class GoogleOAuthClient:
         return response.json()
 
 
-    async def verify_id_token(self,id_token:str)->GoogleIdentity:
+    def verify_id_token(self,id_token:str)->GoogleIdentity:
         claims=google_id_token.verify_oauth2_token(
             id_token,
             self._google_request,
