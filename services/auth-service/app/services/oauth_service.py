@@ -1,6 +1,5 @@
 from __future__ import annotations
-from app.models.oauth_accounts import OAuthAccount
-from app.schemas.schemas import GoogleIdentity,GoogleLoginRequest,OAuthAccountCreate
+from app.schemas.schemas import GoogleIdentity
 from app.infrastructure.oauth.google.client import GoogleOAuthClient
 from app.repositories.user_repository import UserRepository
 from app.repositories.oauth_repository import OAuthAccountRepository
