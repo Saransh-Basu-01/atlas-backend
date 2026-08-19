@@ -63,6 +63,16 @@ async def google_callback(
 
     try:
         token_response=await oauth_service.exchange_code(code)
+        id_token = token_response["id_token"]
+       
+        if not id_token:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Google token response missing id_token",
+            )
+
+        identity = oauth_service.verify_id_token(id_token)
+        
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
