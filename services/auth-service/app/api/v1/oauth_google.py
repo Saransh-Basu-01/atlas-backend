@@ -72,7 +72,7 @@ async def google_callback(
             )
 
         identity = oauth_service.verify_id_token(id_token)
-        
+
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -85,5 +85,9 @@ async def google_callback(
             "message": "Google token exchange successful",
             "has_id_token": "id_token" in token_response,
             "has_access_token": "access_token" in token_response,
+            "sub": identity.sub,
+            "email": identity.email,
+            "email_verified": identity.email_verified,
+            "name": identity.name,
         },
     )
