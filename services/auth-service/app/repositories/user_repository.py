@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy import select,Delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import User
