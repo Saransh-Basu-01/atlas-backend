@@ -2,7 +2,6 @@ from __future__ import annotations
 from app.models.oauth_accounts import OAuthAccount
 from app.schemas.schemas import GoogleIdentity,GoogleLoginRequest,OAuthAccountCreate
 from app.infrastructure.oauth.google.client import GoogleOAuthClient
-from app.schemas.schemas import GoogleIdentity
 
 class GoogleOAuthService:
     def __init__(self, google_client: GoogleOAuthClient) -> None:
