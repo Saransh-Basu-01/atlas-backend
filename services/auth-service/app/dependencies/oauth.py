@@ -5,7 +5,7 @@ from app.infrastructure.oauth.google.client import GoogleOAuthClient
 from app.services.oauth_service import GoogleOAuthService
 from app.core.config import settings
 from app.repositories.user_repository import UserRepository
-from repositories.oauth_repository import OAuthAccountRepository
+from app.repositories.oauth_repository import OAuthAccountRepository
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
