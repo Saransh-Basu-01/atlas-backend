@@ -19,4 +19,10 @@ def get_google_oauth_service(
         client_secret=settings.GOOGLE_CLIENT_SECRET,
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
     )
-    return GoogleOAuthService(google_client)
+    user_repository=UserRepository(session)
+    oauth_account_repository=OAuthAccountRepository(session)
+    return GoogleOAuthService(
+        google_client=google_client,
+        user_repository=user_repository,
+        oauth_account_repository=oauth_account_repository,
+    )
