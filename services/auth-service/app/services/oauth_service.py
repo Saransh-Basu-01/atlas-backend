@@ -29,4 +29,43 @@ class GoogleOAuthService:
             provider_user_id=identity.sub
         )
         if oauth_account:
-            user=self._user_repository.find_by_id(oauth_account.user_id)
+            user = self._user_repository.find_by_id(oauth_account.user_id)
+            if user is None:
+                raise ValueError("OAuth account is  linked to a missing user")
+            return user
+        user = None
+        if identity.email:
+            user = self._user_repository.find_by_email(identity.email)
+
+        if user:
+        # Security rule: only auto-link if email is verified by Google
+            if not identity.email_verified:
+                raise ValueError(
+                    "Cannot link Google account to existing user: email is not verified"
+                )
+
+            self._oauth_account_repository.create(
+            provider="google",
+            provider_identity=identity.sub,
+            user_id=user.id,
+            email=identity.email,
+            )
+        # no commit/rollback orchestration yet per your phase plan
+            return user
+
+    # 4) No user exists by email: create new user, then link oauth account
+        user = self._user_repository.create(
+            email=identity.email,
+            full_name=identity.name,
+            is_active=True,
+        )
+
+        self._oauth_account_repository.create(
+            provider="google",
+            provider_identity=identity.sub,
+            user_id=user.id,
+            email=identity.email,
+        )
+
+    # no commit/rollback orchestration yet per your phase plan
+        return user
