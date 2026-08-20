@@ -44,12 +44,7 @@ class GoogleOAuthService:
                     "Cannot link Google account to existing user: email is not verified"
                 )
 
-            await self._oauth_account_repository.create(
-            provider="google",
-            provider_user_id=identity.sub,
-            user_id=user.id,
-            provider_email=identity.email,
-            )
+            await self._oauth_account_repository.create()
         # no commit/rollback orchestration yet per your phase plan
             return user
 
