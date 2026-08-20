@@ -22,3 +22,11 @@ class GoogleOAuthService:
 
     def verify_id_token(self, id_token: str) -> GoogleIdentity:
         return self._google_client.verify_id_token(id_token)
+
+    def login_or_create_user(self,identity:GoogleIdentity):
+        oauth_account=self._oauth_account_repository.find_by_provider_identity(
+            provider='google',
+            provider_user_id=identity.sub
+        )
+        if oauth_account:
+            user=self._user_repository.find_by_id(oauth_account.user_id)
