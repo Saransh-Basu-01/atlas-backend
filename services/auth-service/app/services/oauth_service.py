@@ -99,5 +99,6 @@ class GoogleOAuthService:
         await self._oauth_account_repository.create(
             oauth_account
         )
+        await self.session.commit()
 
         return user
