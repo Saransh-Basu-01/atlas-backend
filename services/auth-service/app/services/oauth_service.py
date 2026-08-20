@@ -1,65 +1,108 @@
 from __future__ import annotations
+
+from app.models.models import User
+from app.models.oauth_accounts import OAuthAccount
 from app.schemas.schemas import GoogleIdentity
 from app.infrastructure.oauth.google.client import GoogleOAuthClient
 from app.repositories.user_repository import UserRepository
 from app.repositories.oauth_repository import OAuthAccountRepository
+
+
 class GoogleOAuthService:
-    def __init__(self, 
-        google_client:GoogleOAuthClient,
+    def __init__(
+        self,
+        google_client: GoogleOAuthClient,
         user_repository: UserRepository,
         oauth_account_repository: OAuthAccountRepository,
-                 ) -> None:
+    ) -> None:
         self._google_client = google_client
         self._user_repository = user_repository
         self._oauth_account_repository = oauth_account_repository
 
     def get_authorization_url(self) -> tuple[str, str]:
-        # Service delegates construction details to client
         return self._google_client.get_authorization_url()
 
-    async def exchange_code(self,code:str)->dict:
+    async def exchange_code(self, code: str) -> dict:
         return await self._google_client.exchange_code(code)
 
     def verify_id_token(self, id_token: str) -> GoogleIdentity:
         return self._google_client.verify_id_token(id_token)
 
-    async def login_or_create_user(self,identity:GoogleIdentity):
-        oauth_account=await self._oauth_account_repository.find_by_provider_identity(
-            provider='google',
-            provider_user_id=identity.sub
-        )
-        if oauth_account:
-            user = await self._user_repository.find_by_id(oauth_account.user_id)
-            if user is None:
-                raise ValueError("OAuth account is  linked to a missing user")
-            return user
-        user = None
-        if identity.email:
-            user = await self._user_repository.find_by_email(identity.email)
+    async def login_or_create_user(
+        self,
+        identity: GoogleIdentity,
+    ) -> User:
 
-        if user:
-        # Security rule: only auto-link if email is verified by Google
-            if not identity.email_verified:
+        # 1. Check whether this Google account already exists
+        oauth_account = (
+            await self._oauth_account_repository.find_by_provider_identity(
+                provider="google",
+                provider_user_id=identity.sub,
+            )
+        )
+
+        # 2. Existing Google account
+        if oauth_account:
+            user = await self._user_repository.find_by_id(
+                oauth_account.user_id
+            )
+
+            if user is None:
                 raise ValueError(
-                    "Cannot link Google account to existing user: email is not verified"
+                    "OAuth account is linked to a missing user"
                 )
 
-            await self._oauth_account_repository.create()
-        # no commit/rollback orchestration yet per your phase plan
             return user
 
-    # 4) No user exists by email: create new user, then link oauth account
-        user = await self._user_repository.create(
-            email=identity.email,
-            username=identity.name,
+        # 3. Check whether a normal user already exists
+        user = await self._user_repository.find_by_email(
+            identity.email
         )
 
-        await self._oauth_account_repository.create(
+        # 4. Existing user → link Google account
+        if user:
+            if not identity.email_verified:
+                raise ValueError(
+                    "Cannot link Google account: email is not verified"
+                )
+
+            oauth_account = OAuthAccount(
+                user_id=user.id,
+                provider="google",
+                provider_user_id=identity.sub,
+                provider_email=identity.email,
+            )
+
+            await self._oauth_account_repository.create(
+                oauth_account
+            )
+
+            return user
+
+        # 5. No user exists → create a new user
+        if not identity.name:
+            raise ValueError(
+                "Google account does not provide a usable username"
+            )
+
+        user = User(
+            username=identity.name,
+            email=identity.email,
+            password_hash=None,
+        )
+
+        await self._user_repository.create(user)
+
+        # 6. Create OAuth account linked to the new user
+        oauth_account = OAuthAccount(
+            user_id=user.id,
             provider="google",
             provider_user_id=identity.sub,
-            user_id=user.id,
             provider_email=identity.email,
         )
 
-    # no commit/rollback orchestration yet per your phase plan
+        await self._oauth_account_repository.create(
+            oauth_account
+        )
+
         return user
