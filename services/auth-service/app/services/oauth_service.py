@@ -80,11 +80,6 @@ class GoogleOAuthService:
             return user
 
         # 5. No user exists → create a new user
-        if not identity.name:
-            raise ValueError(
-                "Google account does not provide a usable username"
-            )
-
         user = User(
             username=f"google_{identity.sub}",
             email=identity.email,
