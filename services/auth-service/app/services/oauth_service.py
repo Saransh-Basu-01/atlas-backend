@@ -23,19 +23,19 @@ class GoogleOAuthService:
     def verify_id_token(self, id_token: str) -> GoogleIdentity:
         return self._google_client.verify_id_token(id_token)
 
-    def login_or_create_user(self,identity:GoogleIdentity):
-        oauth_account=self._oauth_account_repository.find_by_provider_identity(
+    async def login_or_create_user(self,identity:GoogleIdentity):
+        oauth_account=await self._oauth_account_repository.find_by_provider_identity(
             provider='google',
             provider_user_id=identity.sub
         )
         if oauth_account:
-            user = self._user_repository.find_by_id(oauth_account.user_id)
+            user = await self._user_repository.find_by_id(oauth_account.user_id)
             if user is None:
                 raise ValueError("OAuth account is  linked to a missing user")
             return user
         user = None
         if identity.email:
-            user = self._user_repository.find_by_email(identity.email)
+            user = await self._user_repository.find_by_email(identity.email)
 
         if user:
         # Security rule: only auto-link if email is verified by Google
@@ -44,7 +44,7 @@ class GoogleOAuthService:
                     "Cannot link Google account to existing user: email is not verified"
                 )
 
-            self._oauth_account_repository.create(
+            await self._oauth_account_repository.create(
             provider="google",
             provider_user_id=identity.sub,
             user_id=user.id,
@@ -54,12 +54,12 @@ class GoogleOAuthService:
             return user
 
     # 4) No user exists by email: create new user, then link oauth account
-        user = self._user_repository.create(
+        user = await self._user_repository.create(
             email=identity.email,
             username=identity.name,
         )
 
-        self._oauth_account_repository.create(
+        await self._oauth_account_repository.create(
             provider="google",
             provider_user_id=identity.sub,
             user_id=user.id,
