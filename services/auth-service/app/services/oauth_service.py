@@ -86,7 +86,7 @@ class GoogleOAuthService:
             )
 
         user = User(
-            username=identity.name,
+            username=f"google_{identity.sub}",
             email=identity.email,
             password_hash=None,
         )
