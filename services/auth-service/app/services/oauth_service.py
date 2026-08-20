@@ -46,9 +46,9 @@ class GoogleOAuthService:
 
             self._oauth_account_repository.create(
             provider="google",
-            provider_identity=identity.sub,
+            provider_user_id=identity.sub,
             user_id=user.id,
-            email=identity.email,
+            provider_email=identity.email,
             )
         # no commit/rollback orchestration yet per your phase plan
             return user
@@ -56,15 +56,14 @@ class GoogleOAuthService:
     # 4) No user exists by email: create new user, then link oauth account
         user = self._user_repository.create(
             email=identity.email,
-            full_name=identity.name,
-            is_active=True,
+            username=identity.name,
         )
 
         self._oauth_account_repository.create(
             provider="google",
-            provider_identity=identity.sub,
+            provider_user_id=identity.sub,
             user_id=user.id,
-            email=identity.email,
+            provider_email=identity.email,
         )
 
     # no commit/rollback orchestration yet per your phase plan
