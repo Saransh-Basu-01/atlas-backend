@@ -92,7 +92,7 @@ class GoogleOAuthService:
         )
 
         await self._user_repository.create(user)
-
+        await self._user_repository.flush()
         # 6. Create OAuth account linked to the new user
         oauth_account = OAuthAccount(
             user_id=user.id,
