@@ -21,6 +21,7 @@ dependencies = [
     "redis>=8.0.1",
     "aio-pika>=10.0.1",
     "google-auth>=2.56.3",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]
