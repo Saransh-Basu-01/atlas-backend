@@ -72,6 +72,7 @@ async def google_callback(
             )
 
         identity = oauth_service.verify_id_token(id_token)
+        user=await oauth_service.login_or_create_user(identity)
 
     except Exception as exc:
         raise HTTPException(
