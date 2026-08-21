@@ -83,12 +83,9 @@ async def google_callback(
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "message": "Google token exchange successful",
-            "has_id_token": "id_token" in token_response,
-            "has_access_token": "access_token" in token_response,
-            "sub": identity.sub,
-            "email": identity.email,
-            "email_verified": identity.email_verified,
-            "name": identity.name,
+        "message": "Google login successful",
+        "user_id": user.id,
+        "email": user.email,
+        "username": user.username,
         },
     )
