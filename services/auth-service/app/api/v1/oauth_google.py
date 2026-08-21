@@ -74,11 +74,13 @@ async def google_callback(
         identity = oauth_service.verify_id_token(id_token)
         user=await oauth_service.login_or_create_user(identity)
 
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to exchange authorization code with Google",
-        ) from exc
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail="Google OAuth processing failed",
+    ) from exc
    
     return JSONResponse(
         status_code=status.HTTP_200_OK,
