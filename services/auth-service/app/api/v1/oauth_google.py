@@ -147,7 +147,7 @@ async def google_callback(
 
         print("🔐 Verifying ID token...")
         identity = oauth_service.verify_id_token(id_token)
-        print(f"✅ Identity: {identity.get('email')}")
+        print(f"✅ Identity: {identity.email}") 
         
         print("👤 Creating/finding user...")
         user = await oauth_service.login_or_create_user(identity)
