@@ -79,8 +79,7 @@ class GoogleOAuthService:
                 oauth_account
             )
             await self._oauth_account_repository.session.commit() 
-            tokens = await self._auth_service.issue_tokens(user)
-            return user, tokens
+            return user
 
 
         # 5. No user exists → create a new user
@@ -104,5 +103,4 @@ class GoogleOAuthService:
             oauth_account
         )
         await self._user_repository.commit()
-        tokens = await self._auth_service.issue_tokens(user)
-        return user, tokens
+        return user
