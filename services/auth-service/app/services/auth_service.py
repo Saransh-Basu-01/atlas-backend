@@ -68,7 +68,7 @@ class AuthService:
         is_valid=verify_password(password,user.password_hash)
         if not is_valid:
             raise InvalidCredentialsError("invalid credentials")
-        self.issue_tokens(user)
+        return await self.issue_tokens(user)
 
     async def refresh(
         self,
