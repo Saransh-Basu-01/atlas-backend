@@ -68,29 +68,7 @@ class AuthService:
         is_valid=verify_password(password,user.password_hash)
         if not is_valid:
             raise InvalidCredentialsError("invalid credentials")
-        
-        access_token = create_access_token(data={"sub": str(user.id)})
-
-        raw_refresh_token = generate_refresh_token()
-        refresh_token_hash = hash_refresh_token(raw_refresh_token)
-
-        refresh_expires_at = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-        )
-
-        refresh_token_obj = RefreshToken(
-        user_id=user.id,
-        token_hash=refresh_token_hash,
-        expires_at=refresh_expires_at,
-        )
-
-        await self.refresh_token_repo.create(refresh_token_obj)
-        await self.session.commit()
-
-        return AuthTokens(
-        access_token=access_token,
-        refresh_token=raw_refresh_token,
-        )
+        self.issue_tokens(user)
 
     async def refresh(
         self,
