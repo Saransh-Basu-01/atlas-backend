@@ -5,9 +5,9 @@ from fastapi.responses import RedirectResponse, JSONResponse
 
 from app.dependencies.oauth import get_google_oauth_service
 from app.services.oauth_service import GoogleOAuthService
-
+from app.services.auth_service import AuthService
 router = APIRouter(prefix="/auth/google", tags=["auth"])
-
+from app.api.v1.auth import get_user_service
 
 @router.get("/login")
 def google_login(
@@ -29,7 +29,8 @@ async def google_callback(
     state: str | None = Query(default=None),
     error: str | None = Query(default=None),
     error_description: str | None = Query(default=None),
-    oauth_service:GoogleOAuthService=Depends(get_google_oauth_service)
+    oauth_service:GoogleOAuthService=Depends(get_google_oauth_service),
+    auth_service:AuthService=Depends(get_user_service)
 ) -> JSONResponse:
     # 1) Google returned an OAuth error
     if error:
@@ -72,7 +73,8 @@ async def google_callback(
             )
 
         identity = oauth_service.verify_id_token(id_token)
-        user, tokens = await oauth_service.login_or_create_user(identity)
+        user= await oauth_service.login_or_create_user(identity)
+        tokens=await auth_service.issue_tokens(user)
 
     except HTTPException:
         raise
