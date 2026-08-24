@@ -72,7 +72,7 @@ async def google_callback(
             )
 
         identity = oauth_service.verify_id_token(id_token)
-        user=await oauth_service.login_or_create_user(identity)
+        user, tokens = await oauth_service.login_or_create_user(identity)
 
     except HTTPException:
         raise
@@ -89,6 +89,8 @@ async def google_callback(
         "user_id": user.id,
         "email": user.email,
         "username": user.username,
+        "access_token": tokens.access_token,
+        "refresh_token": tokens.refresh_token,
         },
     )
 
