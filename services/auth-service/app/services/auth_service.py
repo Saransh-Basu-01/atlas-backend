@@ -165,3 +165,27 @@ class AuthService:
         deleted_count=await self.refresh_token_repo.delete_all_for_user(user_id)
         await self.session.commit()
         return deleted_count
+
+    async def issue_tokens(self,user:User)->AuthTokens:
+        access_token = create_access_token(data={"sub": str(user.id)})
+
+        raw_refresh_token = generate_refresh_token()
+        refresh_token_hash = hash_refresh_token(raw_refresh_token)
+
+        refresh_expires_at = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+
+        refresh_token_obj = RefreshToken(
+        user_id=user.id,
+        token_hash=refresh_token_hash,
+        expires_at=refresh_expires_at,
+        )
+
+        await self.refresh_token_repo.create(refresh_token_obj)
+        await self.session.commit()
+
+        return AuthTokens(
+        access_token=access_token,
+        refresh_token=raw_refresh_token,
+        )
