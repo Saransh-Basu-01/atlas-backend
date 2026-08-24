@@ -104,5 +104,5 @@ class GoogleOAuthService:
             oauth_account
         )
         await self._user_repository.commit()
-
-        return user
+        tokens = await self._auth_service.issue_tokens(user)
+        return user, tokens
