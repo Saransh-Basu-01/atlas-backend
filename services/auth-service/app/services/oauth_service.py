@@ -6,7 +6,7 @@ from app.schemas.schemas import GoogleIdentity
 from app.infrastructure.oauth.google.client import GoogleOAuthClient
 from app.repositories.user_repository import UserRepository
 from app.repositories.oauth_repository import OAuthAccountRepository
-
+from app.services.auth_service import AuthService
 
 class GoogleOAuthService:
     def __init__(
