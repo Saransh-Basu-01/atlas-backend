@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse,Response
 
 from app.dependencies.oauth import get_google_oauth_service
 from app.services.oauth_service import GoogleOAuthService
 from app.services.auth_service import AuthService
 router = APIRouter(prefix="/auth/google", tags=["auth"])
 from app.api.v1.auth import get_user_service
+from app.core.config import settings
 
 @router.get("/login")
 def google_login(
@@ -25,6 +26,7 @@ def google_login(
 @router.get("/callback")
 async def google_callback(
     request: Request,
+    response: Response,
     code: str | None = Query(default=None),
     state: str | None = Query(default=None),
     error: str | None = Query(default=None),
@@ -83,7 +85,16 @@ async def google_callback(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail="Google OAuth processing failed",
     ) from exc
-   
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="lax",
+        max_age=settings.REFRESH_COOKIE_MAX_AGE_SECONDS,
+        path="/",
+    )
+
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
@@ -92,7 +103,6 @@ async def google_callback(
         "email": user.email,
         "username": user.username,
         "access_token": tokens.access_token,
-        "refresh_token": tokens.refresh_token,
         },
     )
 
