@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService,UserAlreadyExistsError,InvalidCredentialsError
-from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenPayload,TokenResponse,RefreshTokenRequest,ResetPasswordRequest,ResetPasswordResponse,ForgotPasswordRequest,ForgotPasswordResponse
+from app.schemas.schemas import UserCreate, UserResponse,UserLogin,TokenResponse,ResetPasswordRequest,ResetPasswordResponse,ForgotPasswordRequest,ForgotPasswordResponse
 from app.dependencies.auth import get_current_user
 from app.models.models import User
 from fastapi.security import OAuth2PasswordRequestForm
@@ -56,7 +56,6 @@ async def register_user(
     service: AuthService = Depends(get_user_service),
 ):
     try:
-        # service.register expects a UserCreate object (as in your code)
         user = await service.register(payload)
         return user
     except UserAlreadyExistsError as e:
@@ -159,9 +158,9 @@ async def logout_user(
     # Optional: if token exists, revoke it in DB (recommended)
     if refresh_token:
         try:
-            await service.revoke_refresh_token(refresh_token)  # create this method if not present
+            await service.revoke_refresh_token(refresh_token)  
         except Exception:
-            pass  # don't fail logout for this
+            pass  
 
     response.delete_cookie(
         key="refresh_token",
