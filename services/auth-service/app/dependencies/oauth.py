@@ -7,11 +7,13 @@ from app.core.config import settings
 from app.repositories.user_repository import UserRepository
 from app.repositories.oauth_repository import OAuthAccountRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.api.v1.auth import get_user_service
+from app.services.auth_service import AuthService 
 from app.db.session import get_db
 
 def get_google_oauth_service(
          session: AsyncSession = Depends(get_db),
+         auth_service: AuthService = Depends(get_user_service),
 ) -> GoogleOAuthService:
     google_client = GoogleOAuthClient(
         client_id=settings.GOOGLE_CLIENT_ID,
@@ -24,4 +26,5 @@ def get_google_oauth_service(
         google_client=google_client,
         user_repository=user_repository,
         oauth_account_repository=oauth_account_repository,
+        auth_service=auth_service,
     )
