@@ -14,10 +14,12 @@ class GoogleOAuthService:
         google_client: GoogleOAuthClient,
         user_repository: UserRepository,
         oauth_account_repository: OAuthAccountRepository,
+        auth_service: AuthService,
     ) -> None:
         self._google_client = google_client
         self._user_repository = user_repository
         self._oauth_account_repository = oauth_account_repository
+        self._auth_service = auth_service 
 
     def get_authorization_url(self) -> tuple[str, str]:
         return self._google_client.get_authorization_url()
@@ -76,8 +78,10 @@ class GoogleOAuthService:
             await self._oauth_account_repository.create(
                 oauth_account
             )
+            await self._oauth_account_repository.session.commit() 
+            tokens = await self._auth_service.issue_tokens(user)
+            return user, tokens
 
-            return user
 
         # 5. No user exists → create a new user
         user = User(
